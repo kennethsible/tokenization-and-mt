@@ -4,6 +4,8 @@ import os
 import sentencepiece as spm
 from tqdm import tqdm
 
+from utils.data.vulgate_loader import VulgateDataset
+
 
 def normalize(file_path: str, src_lang: str, tgt_lang: str) -> None:
     for lang in (src_lang, tgt_lang):
@@ -50,13 +52,18 @@ def get_vocab(file_path: str, data_dir: str, src_lang: str, tgt_lang: str):
     )
 
 
-def apple_initial_filter(file_path: str, src_lang: str, tgt_lang: str) -> None:
+def apply_initial_filter(file_path: str, src_lang: str, tgt_lang: str, filter_names: list[str]) -> None:
     with open(f'{file_path}.{src_lang}') as src_f, open(f'{file_path}.{tgt_lang}') as tgt_f:
         lines = []
         for src_line, tgt_line in tqdm(list(zip(src_f.readlines(), tgt_f.readlines()))):
             src_line, tgt_line = src_line.rstrip(), tgt_line.rstrip()
             if len(src_line) > 0 and len(tgt_line) > 0 and src_line != tgt_line:
                 lines.append(f'{src_line}\t{tgt_line}')
+
+    for filter_name in filter_names:
+        if filter_name == "psalms":
+            apply_psalm_filter(lines)
+
     with open(f'{file_path}.{src_lang}', 'w') as src_f, open(
         f'{file_path}.{tgt_lang}', 'w'
     ) as tgt_f:
@@ -66,7 +73,25 @@ def apple_initial_filter(file_path: str, src_lang: str, tgt_lang: str) -> None:
             tgt_f.write(tgt_line + '\n')
 
 
-def apple_final_filter(data_file: str, max_length: int, len_ratio: int) -> None:
+def apply_psalm_filter(lines: list[str]):
+    psalms: VulgateDataset = VulgateDataset()
+    psalm_lines: list[str] = []
+
+    for line in tqdm(lines, desc="Filtering Psalm Translations"):
+        source, target = line.split("\t")
+        if (source, target) in psalms:
+            lines.append(line)
+        elif (target, source) in psalms:
+            lines.append(line)
+
+    print(f"Psalms slated for removal: {len(psalm_lines)}")
+    for line in psalm_lines:
+        source, target = line.split("\t")
+        print(f"Removing Pair:\n{source}\n{target}\n")
+        lines.remove(line)
+
+
+def apply_final_filter(data_file: str, max_length: int, len_ratio: int) -> None:
     data = []
     with open(data_file) as data_f:
         for line in tqdm(data_f.readlines()):
@@ -90,6 +115,9 @@ def main() -> None:
     parser.add_argument('--data-dir', required=True, help='data directory')
     parser.add_argument('--max-length', type=int, required=True, help='maximum length')
     parser.add_argument('--len-ratio', type=int, required=True, help='length ratio')
+    parser.add_argument(
+        "--filters", type=str, required=False, nargs="*", default=[], choices=["psalms"], help='specific filters'
+    )
     subparsers = parser.add_subparsers(dest='cmd', help='method of subword tokenization')
     bpe_parser = subparsers.add_parser('bpe')
     bpe_parser.add_argument('--merge-ops', required=True, help='merge operations')
@@ -114,7 +142,7 @@ def main() -> None:
     os.system(f'wc -l {train_path}.{tgt_lang}')
 
     print('\n[1/12] Filtering Training Data (Initial)...')
-    apple_initial_filter(train_path, src_lang, tgt_lang)
+    apply_initial_filter(train_path, src_lang, tgt_lang, args.filters)
     os.system(f'wc -l {train_path}.{src_lang}')
     os.system(f'wc -l {train_path}.{tgt_lang}')
 
@@ -213,7 +241,7 @@ def main() -> None:
         os.system(
             f'paste {file_path}.{src_lang} {file_path}.{tgt_lang} > {file_path}.{src_lang}-{tgt_lang}'
         )
-    apple_final_filter(
+    apply_final_filter(
         f'{train_path}{file_prefix}.{src_lang}-{tgt_lang}', args.max_length, args.len_ratio
     )
     os.system(f'wc -l {train_path}{file_prefix}.{src_lang}-{tgt_lang}')
