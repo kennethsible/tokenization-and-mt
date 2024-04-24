@@ -52,11 +52,21 @@ def get_vocab(file_path: str, data_dir: str, src_lang: str, tgt_lang: str):
     )
 
 
-def apply_initial_filter(file_path: str, src_lang: str, tgt_lang: str, filter_names: list[str]) -> None:
+def apply_initial_filter(
+    file_path: str,
+    src_lang: str,
+    tgt_lang: str,
+    filter_names: list[str],
+    preprocessor_names: list[str]
+) -> None:
     with open(f'{file_path}.{src_lang}') as src_f, open(f'{file_path}.{tgt_lang}') as tgt_f:
         lines = []
         for src_line, tgt_line in tqdm(list(zip(src_f.readlines(), tgt_f.readlines()))):
             src_line, tgt_line = src_line.rstrip(), tgt_line.rstrip()
+            for preprocessor_name in preprocessor_names:
+                if preprocessor_name == "apparatus":
+                    src_line, tgt_line = apply_apparatus_preprocessor(src_line, tgt_line)
+
             if len(src_line) > 0 and len(tgt_line) > 0 and src_line != tgt_line:
                 lines.append(f'{src_line}\t{tgt_line}')
 
@@ -91,6 +101,14 @@ def apply_psalm_filter(lines: list[str]):
         lines.remove(line)
 
 
+def apply_apparatus_preprocessor(src_line: str, tgt_line: str) -> tuple[str, str]:
+    for character in ("<", ">", "[", "]"):
+        src_line = src_line.replace(character, "")
+        tgt_line = tgt_line.replace(character, "")
+
+    return src_line, tgt_line
+
+
 def apply_final_filter(data_file: str, max_length: int, len_ratio: int) -> None:
     data = []
     with open(data_file) as data_f:
@@ -118,6 +136,10 @@ def main() -> None:
     parser.add_argument(
         "--filters", type=str, required=False, nargs="*", default=[], choices=["psalms"], help='specific filters'
     )
+    parser.add_argument(
+        "--preprocessors", type=str, required=False, nargs="*", default=[], choices=["apparatus"],
+        help="specific preprocessors"
+    )
     subparsers = parser.add_subparsers(dest='cmd', help='method of subword tokenization')
     bpe_parser = subparsers.add_parser('bpe')
     bpe_parser.add_argument('--merge-ops', required=True, help='merge operations')
@@ -142,7 +164,7 @@ def main() -> None:
     os.system(f'wc -l {train_path}.{tgt_lang}')
 
     print('\n[1/12] Filtering Training Data (Initial)...')
-    apply_initial_filter(train_path, src_lang, tgt_lang, args.filters)
+    apply_initial_filter(train_path, src_lang, tgt_lang, args.filters, args.preprocessors)
     os.system(f'wc -l {train_path}.{src_lang}')
     os.system(f'wc -l {train_path}.{tgt_lang}')
 
