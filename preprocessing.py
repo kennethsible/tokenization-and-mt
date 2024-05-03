@@ -1,7 +1,9 @@
 import argparse
 import os
+import re
 
 import sentencepiece as spm
+import unicodedata as ud
 from tqdm import tqdm
 
 from utils.data.vulgate_loader import VulgateDataset
@@ -68,11 +70,15 @@ def apply_initial_filter(
                     src_line, tgt_line = apply_apparatus_preprocessor(src_line, tgt_line)
 
             if len(src_line) > 0 and len(tgt_line) > 0 and src_line != tgt_line:
+                src_line = re.sub(r'\s+', ' ', src_line) #replace string of whitespaces with single space
+                tgt_line = re.sub(r'\s+', ' ', tgt_line)
                 lines.append(f'{src_line}\t{tgt_line}')
 
     for filter_name in filter_names:
         if filter_name == "psalms":
             apply_psalm_filter(lines)
+        if filter_name == "alphabet":
+            apply_alphabet_filter(lines)
 
     with open(f'{file_path}.{src_lang}', 'w') as src_f, open(
         f'{file_path}.{tgt_lang}', 'w'
@@ -100,6 +106,12 @@ def apply_psalm_filter(lines: list[str]):
         print(f"Removing Pair:\n{source}\n{target}\n")
         lines.remove(line)
 
+def only_roman_chars(unistr):
+    latin_letters= {}
+    return all(latin_letters.setdefault(uchr, 'LATIN' in ud.name(uchr)) for uchr in unistr if uchr.isalpha())
+
+def apply_alphabet_filter(lines: list[str]):
+    pass
 
 def apply_apparatus_preprocessor(src_line: str, tgt_line: str) -> tuple[str, str]:
     for character in ("<", ">", "[", "]"):
@@ -134,7 +146,7 @@ def main() -> None:
     parser.add_argument('--max-length', type=int, required=True, help='maximum length')
     parser.add_argument('--len-ratio', type=int, required=True, help='length ratio')
     parser.add_argument(
-        "--filters", type=str, required=False, nargs="*", default=[], choices=["psalms"], help='specific filters'
+        "--filters", type=str, required=False, nargs="*", default=[], choices=["psalms", "alphabet"], help='specific filters'
     )
     parser.add_argument(
         "--preprocessors", type=str, required=False, nargs="*", default=[], choices=["apparatus"],
