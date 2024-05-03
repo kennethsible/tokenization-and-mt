@@ -106,10 +106,6 @@ def apply_psalm_filter(lines: list[str]):
         print(f"Removing Pair:\n{source}\n{target}\n")
         lines.remove(line)
 
-def only_roman_chars(unistr):
-    latin_letters= {}
-    return all(latin_letters.setdefault(uchr, 'LATIN' in ud.name(uchr)) for uchr in unistr if uchr.isalpha())
-
 def apply_alphabet_filter(lines: list[str]):
     pass
 
