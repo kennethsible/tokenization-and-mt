@@ -96,9 +96,9 @@ def apply_psalm_filter(lines: list[str]):
     for line in tqdm(lines, desc="Filtering Psalm Translations"):
         source, target = line.split("\t")
         if (source, target) in psalms:
-            lines.append(line)
+            psalm_lines.append(line)
         elif (target, source) in psalms:
-            lines.append(line)
+            psalm_lines.append(line)
 
     print(f"Psalms slated for removal: {len(psalm_lines)}")
     for line in psalm_lines:
