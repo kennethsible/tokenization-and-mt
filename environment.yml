@@ -17,6 +17,7 @@ dependencies:
   - mypy
   - tqdm
   - ipykernel
+  - pyarrow
   - pip:
     - subword-nmt
   

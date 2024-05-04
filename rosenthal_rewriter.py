@@ -42,5 +42,5 @@ if __name__ == "__main__":
 
         split: RosenthalDataset = split_datasets[split_number]
         for sentence in split:
-            first_file.write(f"{sentence.latin['sentence']}\n")
-            second_file.write(f"{sentence.english['sentence']}\n")
+            first_file.write(f"{sentence.latin}\n")
+            second_file.write(f"{sentence.english}\n")

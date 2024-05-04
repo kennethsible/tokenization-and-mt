@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from re import sub
 from typing import NamedTuple
 
 from pandas import DataFrame, read_parquet
@@ -25,6 +26,8 @@ class RosenthalDataset:
         data: list[RosenthalItem] = []
         for listed_item in tqdm(listed_frame, desc="Loading Rosenthal Items"):
             item_id, latin_sentence, english_sentence, source = listed_item
+            latin_sentence: str = sub(r"\n", r"\\n", latin_sentence)
+            english_sentence: str = sub(r"\n", r"\\n", english_sentence)
             new_item: RosenthalItem = RosenthalItem(item_id, latin_sentence, english_sentence, source)
             data.append(new_item)
 
