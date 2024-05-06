@@ -2,17 +2,11 @@ import argparse
 import os
 import re
 
-from re import Match
-
 import sentencepiece as spm
-import unicodedata as ud
+import unicodedata
 from tqdm import tqdm
 
 from utils.data.vulgate_loader import VulgateDataset
-
-
-NEWLINE_PATTERN: str = r"\\n.+$"
-
 
 def normalize(file_path: str, src_lang: str, tgt_lang: str) -> None:
     for lang in (src_lang, tgt_lang):
@@ -73,20 +67,18 @@ def apply_initial_filter(
             for preprocessor_name in preprocessor_names:
                 if preprocessor_name == "apparatus":
                     src_line, tgt_line = apply_apparatus_preprocessor(src_line, tgt_line)
-                elif preprocessor_name == "newline":
-                    src_line, tgt_line = apply_newline_preprocessor(src_line, tgt_line)
 
             if len(src_line) > 0 and len(tgt_line) > 0 and src_line != tgt_line:
-                src_line = re.sub(r'\s+', ' ', src_line)   # replace string of whitespaces with single space
+                src_line = re.sub(r'\s+', ' ', src_line) #replace string of whitespaces with single space
                 tgt_line = re.sub(r'\s+', ' ', tgt_line)
                 lines.append(f'{src_line}\t{tgt_line}')
-
+    print(len(lines))
     for filter_name in filter_names:
         if filter_name == "psalms":
             apply_psalm_filter(lines)
         if filter_name == "alphabet":
             apply_alphabet_filter(lines)
-
+    print(len(lines))
     with open(f'{file_path}.{src_lang}', 'w') as src_f, open(
         f'{file_path}.{tgt_lang}', 'w'
     ) as tgt_f:
@@ -103,9 +95,9 @@ def apply_psalm_filter(lines: list[str]):
     for line in tqdm(lines, desc="Filtering Psalm Translations"):
         source, target = line.split("\t")
         if (source, target) in psalms:
-            psalm_lines.append(line)
+            lines.append(line)
         elif (target, source) in psalms:
-            psalm_lines.append(line)
+            lines.append(line)
 
     print(f"Psalms slated for removal: {len(psalm_lines)}")
     for line in psalm_lines:
@@ -113,27 +105,26 @@ def apply_psalm_filter(lines: list[str]):
         print(f"Removing Pair:\n{source}\n{target}\n")
         lines.remove(line)
 
+def is_latin(line: str):
+    for char in line:
+        if char.isalpha() and unicodedata.category(char)[0]=='L' and unicodedata.category(char)!='Lm':
+            if 'LATIN' not in unicodedata.name(char, '').split():
+                return False
+    return True
 
 def apply_alphabet_filter(lines: list[str]):
-    pass
-
+    count = 0
+    for line in tqdm(lines, desc="Filtering Non-Latin Script"):
+        if is_latin(line) is False:
+            # print(f'Removing Pair:{line}')
+            lines.remove(line)
+            count += 1
+    print(f'Number of lines removed: {count}')
 
 def apply_apparatus_preprocessor(src_line: str, tgt_line: str) -> tuple[str, str]:
     for character in ("<", ">", "[", "]"):
         src_line = src_line.replace(character, "")
         tgt_line = tgt_line.replace(character, "")
-
-    return src_line, tgt_line
-
-
-def apply_newline_preprocessor(src_line: str, tgt_line: str) -> tuple[str, str]:
-    src_match: Match = re.search(NEWLINE_PATTERN, src_line)
-    if src_match is not None:
-        src_line = src_line.strip(src_match.group(0))
-
-    tgt_match: Match = re.search(NEWLINE_PATTERN, tgt_line)
-    if tgt_match is not None:
-        tgt_line = tgt_line.strip(tgt_match.group(0))
 
     return src_line, tgt_line
 
@@ -166,7 +157,7 @@ def main() -> None:
         "--filters", type=str, required=False, nargs="*", default=[], choices=["psalms", "alphabet"], help='specific filters'
     )
     parser.add_argument(
-        "--preprocessors", type=str, required=False, nargs="*", default=[], choices=["apparatus", "newline"],
+        "--preprocessors", type=str, required=False, nargs="*", default=[], choices=["apparatus"],
         help="specific preprocessors"
     )
     subparsers = parser.add_subparsers(dest='cmd', help='method of subword tokenization')
