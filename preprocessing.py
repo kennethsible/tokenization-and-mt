@@ -8,6 +8,7 @@ from tqdm import tqdm
 
 from utils.data.vulgate_loader import VulgateDataset
 
+
 def normalize(file_path: str, src_lang: str, tgt_lang: str) -> None:
     for lang in (src_lang, tgt_lang):
         os.system(
@@ -69,7 +70,7 @@ def apply_initial_filter(
                     src_line, tgt_line = apply_apparatus_preprocessor(src_line, tgt_line)
 
             if len(src_line) > 0 and len(tgt_line) > 0 and src_line != tgt_line:
-                src_line = re.sub(r'\s+', ' ', src_line) #replace string of whitespaces with single space
+                src_line = re.sub(r'\s+', ' ', src_line)   # replace string of whitespaces with single space
                 tgt_line = re.sub(r'\s+', ' ', tgt_line)
                 lines.append(f'{src_line}\t{tgt_line}')
     print(len(lines))
@@ -105,12 +106,14 @@ def apply_psalm_filter(lines: list[str]):
         print(f"Removing Pair:\n{source}\n{target}\n")
         lines.remove(line)
 
+
 def is_latin(line: str):
     for char in line:
-        if char.isalpha() and unicodedata.category(char)[0]=='L' and unicodedata.category(char)!='Lm':
+        if char.isalpha() and unicodedata.category(char)[0] == 'L' and unicodedata.category(char) != 'Lm':
             if 'LATIN' not in unicodedata.name(char, '').split():
                 return False
     return True
+
 
 def apply_alphabet_filter(lines: list[str]):
     count = 0
@@ -120,6 +123,7 @@ def apply_alphabet_filter(lines: list[str]):
             lines.remove(line)
             count += 1
     print(f'Number of lines removed: {count}')
+
 
 def apply_apparatus_preprocessor(src_line: str, tgt_line: str) -> tuple[str, str]:
     for character in ("<", ">", "[", "]"):
@@ -164,7 +168,7 @@ def main() -> None:
     bpe_parser = subparsers.add_parser('bpe')
     bpe_parser.add_argument('--merge-ops', required=True, help='merge operations')
     bpe_parser.add_argument('--bpe-dropout', type=float, help='subword dropout')
-    bpe_parser.add_argument('--random-seed', type=float, help='random seed')
+    bpe_parser.add_argument('--random-seed', type=int, help='random seed')
     sp_parser = subparsers.add_parser('spm')
     sp_parser.add_argument('--vocab-size', required=True, help='vocab size')
     sp_parser.add_argument('--model-type', required=True, help='model type')
