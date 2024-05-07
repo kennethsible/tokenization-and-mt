@@ -2,11 +2,16 @@ import argparse
 import os
 import re
 
+from re import Match
+
 import sentencepiece as spm
 import unicodedata
 from tqdm import tqdm
 
 from utils.data.vulgate_loader import VulgateDataset
+
+
+NEWLINE_PATTERN: str = r"\\n.+$"
 
 
 def normalize(file_path: str, src_lang: str, tgt_lang: str) -> None:
@@ -68,6 +73,8 @@ def apply_initial_filter(
             for preprocessor_name in preprocessor_names:
                 if preprocessor_name == "apparatus":
                     src_line, tgt_line = apply_apparatus_preprocessor(src_line, tgt_line)
+                elif preprocessor_name == "newline":
+                    src_line, tgt_line = apply_newline_preprocessor(src_line, tgt_line)
 
             if len(src_line) > 0 and len(tgt_line) > 0 and src_line != tgt_line:
                 src_line = re.sub(r'\s+', ' ', src_line)   # replace string of whitespaces with single space
@@ -96,9 +103,9 @@ def apply_psalm_filter(lines: list[str]):
     for line in tqdm(lines, desc="Filtering Psalm Translations"):
         source, target = line.split("\t")
         if (source, target) in psalms:
-            lines.append(line)
+            psalm_lines.append(line)
         elif (target, source) in psalms:
-            lines.append(line)
+            psalm_lines.append(line)
 
     print(f"Psalms slated for removal: {len(psalm_lines)}")
     for line in psalm_lines:
@@ -133,6 +140,18 @@ def apply_apparatus_preprocessor(src_line: str, tgt_line: str) -> tuple[str, str
     return src_line, tgt_line
 
 
+def apply_newline_preprocessor(src_line: str, tgt_line: str) -> tuple[str, str]:
+    src_match: Match = re.search(NEWLINE_PATTERN, src_line)
+    if src_match is not None:
+        src_line = src_line.strip(src_match.group(0))
+
+    tgt_match: Match = re.search(NEWLINE_PATTERN, tgt_line)
+    if tgt_match is not None:
+        tgt_line = tgt_line.strip(tgt_match.group(0))
+
+    return src_line, tgt_line
+
+
 def apply_final_filter(data_file: str, max_length: int, len_ratio: int) -> None:
     data = []
     with open(data_file) as data_f:
@@ -161,7 +180,7 @@ def main() -> None:
         "--filters", type=str, required=False, nargs="*", default=[], choices=["psalms", "alphabet"], help='specific filters'
     )
     parser.add_argument(
-        "--preprocessors", type=str, required=False, nargs="*", default=[], choices=["apparatus"],
+        "--preprocessors", type=str, required=False, nargs="*", default=[], choices=["apparatus", "newline"],
         help="specific preprocessors"
     )
     subparsers = parser.add_subparsers(dest='cmd', help='method of subword tokenization')
