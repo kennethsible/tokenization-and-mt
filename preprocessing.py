@@ -1,4 +1,4 @@
-import argparse
+gmport argparse
 import os
 import re
 
@@ -267,7 +267,7 @@ def main() -> None:
         for file_path in (val_path, test_path):
             apply_bpe(file_path + file_prefix, data_dir, src_lang, tgt_lang)
         file_prefix += '.bpe'
-        get_vocab(train_path, data_dir, src_lang, tgt_lang)
+        get_vocab(train_path + file_prefix, data_dir, src_lang, tgt_lang)
         os.system(f'wc -l {data_dir}/vocab.tsv')
     else:
         print('\n[10/12] Learning and Applying SentencePiece...')
