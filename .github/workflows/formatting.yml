@@ -20,6 +20,7 @@ jobs:
         pip install black
     - name: Harmonizing code style with black
       run: |
-        for file in $(git ls-files '*.py') do
-          black file --line-length 100 --skip-string-normalization
+        for file in $(git ls-files '*.py') 
+        do
+          python -m black file --line-length 100 --skip-string-normalization
         done
