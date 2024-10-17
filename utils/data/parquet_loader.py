@@ -22,13 +22,17 @@ class RosenthalDataset:
     @staticmethod
     def _load_dataset(input_path: Path) -> list[RosenthalItem]:
         frame: DataFrame = read_parquet(input_path)
-        listed_frame: list[tuple[int, str, str, str]] = zip(*[column.tolist() for (_, column) in frame.items()])
+        listed_frame: list[tuple[int, str, str, str]] = zip(
+            *[column.tolist() for (_, column) in frame.items()]
+        )
         data: list[RosenthalItem] = []
         for listed_item in tqdm(listed_frame, desc="Loading Rosenthal Items"):
             item_id, latin_sentence, english_sentence, source = listed_item
             latin_sentence: str = sub(r"\n", r"\\n", latin_sentence)
             english_sentence: str = sub(r"\n", r"\\n", english_sentence)
-            new_item: RosenthalItem = RosenthalItem(item_id, latin_sentence, english_sentence, source)
+            new_item: RosenthalItem = RosenthalItem(
+                item_id, latin_sentence, english_sentence, source
+            )
             data.append(new_item)
 
         return data

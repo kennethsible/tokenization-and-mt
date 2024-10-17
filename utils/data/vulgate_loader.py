@@ -4,7 +4,9 @@ from typing import Optional
 
 
 class VulgateDataset:
-    IUXTA_HEBRAICA_PATH: Path = Path("data", "vulgate", "jerome.vulgate.part.21a.old_latin_psalms.tess")
+    IUXTA_HEBRAICA_PATH: Path = Path(
+        "data", "vulgate", "jerome.vulgate.part.21a.old_latin_psalms.tess"
+    )
     IUXTA_SEPTUAGINTA_PATH: Path = Path("data", "vulgate", "jerome.vulgate.part.21.psalms.tess")
     MULTISPACE_PATTERN: str = r"( ){2,}"
     TESSERAE_LINE_PATTERN: str = r"(?P<annotation><.+>)[\s](?P<text>.+)[;]?[\n]?"

@@ -28,7 +28,9 @@ if __name__ == "__main__":
         if split_path.exists():
             input_filepaths.append(split_path)
         else:
-            raise ValueError(f"The path for the split <{split}> of type <{args.input_type}> does not exist.")
+            raise ValueError(
+                f"The path for the split <{split}> of type <{args.input_type}> does not exist."
+            )
 
     split_datasets: list[RosenthalDataset] = []
     for input_filepath in tqdm(input_filepaths, desc="Loading"):
@@ -37,8 +39,12 @@ if __name__ == "__main__":
 
     first_code, second_code = args.language_codes
     for split_number, split_name in enumerate(args.splits):
-        first_file: TextIO = (args.output_path / f"{split_name}.{first_code}").open(encoding="utf-8", mode="w+")
-        second_file: TextIO = (args.output_path / f"{split_name}.{second_code}").open(encoding="utf-8", mode="w+")
+        first_file: TextIO = (args.output_path / f"{split_name}.{first_code}").open(
+            encoding="utf-8", mode="w+"
+        )
+        second_file: TextIO = (args.output_path / f"{split_name}.{second_code}").open(
+            encoding="utf-8", mode="w+"
+        )
 
         split: RosenthalDataset = split_datasets[split_number]
         for sentence in split:

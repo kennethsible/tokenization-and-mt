@@ -64,7 +64,7 @@ def apply_initial_filter(
     src_lang: str,
     tgt_lang: str,
     filter_names: list[str],
-    preprocessor_names: list[str]
+    preprocessor_names: list[str],
 ) -> None:
     with open(f'{file_path}.{src_lang}') as src_f, open(f'{file_path}.{tgt_lang}') as tgt_f:
         lines = []
@@ -77,7 +77,9 @@ def apply_initial_filter(
                     src_line, tgt_line = apply_newline_preprocessor(src_line, tgt_line)
 
             if len(src_line) > 0 and len(tgt_line) > 0 and src_line != tgt_line:
-                src_line = re.sub(r'\s+', ' ', src_line)   # replace string of whitespaces with single space
+                src_line = re.sub(
+                    r'\s+', ' ', src_line
+                )  # replace string of whitespaces with single space
                 tgt_line = re.sub(r'\s+', ' ', tgt_line)
                 lines.append(f'{src_line}\t{tgt_line}')
     print(len(lines))
@@ -116,7 +118,11 @@ def apply_psalm_filter(lines: list[str]):
 
 def is_latin(line: str):
     for char in line:
-        if char.isalpha() and unicodedata.category(char)[0] == 'L' and unicodedata.category(char) != 'Lm':
+        if (
+            char.isalpha()
+            and unicodedata.category(char)[0] == 'L'
+            and unicodedata.category(char) != 'Lm'
+        ):
             if 'LATIN' not in unicodedata.name(char, '').split():
                 return False
     return True
@@ -177,11 +183,22 @@ def main() -> None:
     parser.add_argument('--max-length', type=int, required=True, help='maximum length')
     parser.add_argument('--len-ratio', type=int, required=True, help='length ratio')
     parser.add_argument(
-        "--filters", type=str, required=False, nargs="*", default=[], choices=["psalms", "alphabet"], help='specific filters'
+        "--filters",
+        type=str,
+        required=False,
+        nargs="*",
+        default=[],
+        choices=["psalms", "alphabet"],
+        help='specific filters',
     )
     parser.add_argument(
-        "--preprocessors", type=str, required=False, nargs="*", default=[], choices=["apparatus", "newline"],
-        help="specific preprocessors"
+        "--preprocessors",
+        type=str,
+        required=False,
+        nargs="*",
+        default=[],
+        choices=["apparatus", "newline"],
+        help="specific preprocessors",
     )
     subparsers = parser.add_subparsers(dest='cmd', help='method of subword tokenization')
     bpe_parser = subparsers.add_parser('bpe')
