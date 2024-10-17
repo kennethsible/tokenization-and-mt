@@ -19,6 +19,8 @@ dependencies:
   - ipykernel
   - pyarrow
   - sentencepiece
+  - transformers
   - pip:
+    - cltk
     - subword-nmt
-  
+    - tensor2tensor
