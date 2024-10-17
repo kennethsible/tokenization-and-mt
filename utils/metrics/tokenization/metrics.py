@@ -5,13 +5,16 @@ from tqdm import tqdm
 from .constants import NamedTokenizationMetric, Paradigm, ParadigmMetric, SubwordTokenizer
 
 
-def compute_paradigm_coherence(tokenizer: SubwordTokenizer, paradigms: list[Paradigm],
-                               tokenizer_kwargs: dict[str, Any]) -> float:
+def compute_paradigm_coherence(
+    tokenizer: SubwordTokenizer, paradigms: list[Paradigm], tokenizer_kwargs: dict[str, Any]
+) -> float:
     total_coherence: int = 0
     total_forms: int = 0
     for paradigm in tqdm(paradigms, desc="Examining Paradigms"):
         forms: list[str] = list(paradigm.keys())
-        tokenizations: list[list[int]] = [tokenizer.encode(form, **tokenizer_kwargs) for form in forms]
+        tokenizations: list[list[int]] = [
+            tokenizer.encode(form, **tokenizer_kwargs) for form in forms
+        ]
         tokens: set[int] = set()
         for tokenization in tokenizations:
             tokens.update(set(tokenization))

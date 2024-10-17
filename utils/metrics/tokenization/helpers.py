@@ -4,18 +4,32 @@ from typing import Any, Type
 from tensor2tensor.data_generators.text_encoder import SubwordTextEncoder
 from transformers import BertTokenizer, CanineTokenizer, PreTrainedTokenizer, RobertaTokenizer
 
-from .constants import DEFAULT_TOKENIZER_FILEPATHS, NamedLanguageModel, SubwordTokenizer, DEFAULT_PARADIGM_FILEPATHS
+from .constants import (
+    DEFAULT_TOKENIZER_FILEPATHS,
+    NamedLanguageModel,
+    SubwordTokenizer,
+    DEFAULT_PARADIGM_FILEPATHS,
+)
 
 
-def get_tokenizer(lm_name: NamedLanguageModel, filepath: str) -> tuple[SubwordTokenizer, dict[str, Any]]:
+def get_tokenizer(
+    lm_name: NamedLanguageModel, filepath: str
+) -> tuple[SubwordTokenizer, dict[str, Any]]:
     match lm_name:
         case NamedLanguageModel.LATIN_BERT:
             subword_tokenizer: SubwordTextEncoder = SubwordTextEncoder(filepath)
             tokenizer_kwargs: dict[str, Any] = {}
-        case NamedLanguageModel.LABERTA | NamedLanguageModel.PHILBERTA | NamedLanguageModel.SPHILBERTA | \
-             NamedLanguageModel.MULTILINGUAL_BERT:
-            tokenizer_class: Type[PreTrainedTokenizer] = BertTokenizer \
-                if lm_name == NamedLanguageModel.MULTILINGUAL_BERT else RobertaTokenizer
+        case (
+            NamedLanguageModel.LABERTA
+            | NamedLanguageModel.PHILBERTA
+            | NamedLanguageModel.SPHILBERTA
+            | NamedLanguageModel.MULTILINGUAL_BERT
+        ):
+            tokenizer_class: Type[PreTrainedTokenizer] = (
+                BertTokenizer
+                if lm_name == NamedLanguageModel.MULTILINGUAL_BERT
+                else RobertaTokenizer
+            )
             subword_tokenizer: PreTrainedTokenizer = tokenizer_class.from_pretrained(filepath)
             tokenizer_kwargs: dict[str, Any] = {"add_special_tokens": False}
         case NamedLanguageModel.CANINE_C | NamedLanguageModel.CANINE_S:
@@ -51,6 +65,8 @@ def retrieve_default_filepath(table_key: str, key: str, table: dict[str, Path]) 
     try:
         default_filepath: Path = table[table_key]
     except KeyError:
-        raise ValueError(f"The table key <{table_key}> is not present in the table for key <{key}> ")
+        raise ValueError(
+            f"The table key <{table_key}> is not present in the table for key <{key}> "
+        )
 
     return default_filepath

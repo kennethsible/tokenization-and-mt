@@ -1,8 +1,17 @@
 from argparse import ArgumentParser, Namespace
 from typing import Any
 
-from utils.metrics.tokenization import NamedLanguageModel, NamedTokenizationMetric, Paradigm, ParadigmMetric, \
-    TokenizationLanguage, construct_paradigms, get_tokenizer, get_tokenization_metric, resolve_filepaths
+from utils.metrics.tokenization import (
+    NamedLanguageModel,
+    NamedTokenizationMetric,
+    Paradigm,
+    ParadigmMetric,
+    TokenizationLanguage,
+    construct_paradigms,
+    get_tokenizer,
+    get_tokenization_metric,
+    resolve_filepaths,
+)
 
 if __name__ == "__main__":
     parser: ArgumentParser = ArgumentParser()
@@ -14,10 +23,14 @@ if __name__ == "__main__":
     args: Namespace = parser.parse_args()
     kwargs: dict[str, Any] = vars(args)
 
-    resolve_filepaths(kwargs)   # Sets up appropriate paths for loading pre-trained model and tokenizer.
+    resolve_filepaths(
+        kwargs
+    )  # Sets up appropriate paths for loading pre-trained model and tokenizer.
     tokenizer, tokenizer_kwargs = get_tokenizer(args.language_model, kwargs["tokenizer_filepath"])
     paradigms: list[Paradigm] = construct_paradigms(kwargs["paradigm_filepath"], args.language)
     metric: ParadigmMetric = get_tokenization_metric(args.metric)
     result: float = metric(tokenizer, paradigms, tokenizer_kwargs)
-    print(f"For the language <{args.language}> and the model <{args.language_model}>, "
-          f"the metric <{args.metric}> attains a result of <{result}>.")
+    print(
+        f"For the language <{args.language}> and the model <{args.language_model}>, "
+        f"the metric <{args.metric}> attains a result of <{result}>."
+    )

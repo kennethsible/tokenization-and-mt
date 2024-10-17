@@ -37,7 +37,7 @@ MODELS_BY_LANGUAGE: dict[str, set[str]] = {
         NamedLanguageModel.LATIN_BERT,
         NamedLanguageModel.MULTILINGUAL_BERT,
         NamedLanguageModel.PHILBERTA,
-        NamedLanguageModel.SPHILBERTA
+        NamedLanguageModel.SPHILBERTA,
     }
 }
 
@@ -48,10 +48,11 @@ DEFAULT_PARADIGM_FILEPATHS: dict[TokenizationLanguage, Path] = {
 DEFAULT_TOKENIZER_FILEPATHS: dict[NamedLanguageModel, Path] = {
     NamedLanguageModel.CANINE_C: Path("resources/canine-c"),
     NamedLanguageModel.CANINE_S: Path("resources/canine-s"),
-    NamedLanguageModel.LATIN_BERT: Path("resources/latin-bert/subword_tokenizer_latin/latin.subword.encoder"),
+    NamedLanguageModel.LATIN_BERT: Path(
+        "resources/latin-bert/subword_tokenizer_latin/latin.subword.encoder"
+    ),
     NamedLanguageModel.MULTILINGUAL_BERT: Path("resources/mbert"),
     NamedLanguageModel.LABERTA: Path("resources/laberta"),
     NamedLanguageModel.PHILBERTA: Path("resources/philberta"),
-    NamedLanguageModel.SPHILBERTA: Path("resources/sphilberta")
+    NamedLanguageModel.SPHILBERTA: Path("resources/sphilberta"),
 }
-

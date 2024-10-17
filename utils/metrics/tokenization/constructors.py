@@ -26,7 +26,11 @@ def construct_latin_unimorph_paradigms(filepath: Path) -> list[Paradigm]:
     with derivation_filepath.open(encoding="utf-8", mode="r") as derivations_file:
         for line in tqdm(derivations_file, desc="Loading Derivations (Latin, Unimorph)"):
             base, derivation, _, affix = line.strip().split("\t")
-            base, derivation, affix = remove_macrons(base), remove_macrons(derivation), remove_macrons(affix)
+            base, derivation, affix = (
+                remove_macrons(base),
+                remove_macrons(derivation),
+                remove_macrons(affix),
+            )
 
             if derivation not in derivations:
                 derivations[derivation] = []
@@ -41,8 +45,11 @@ def construct_latin_unimorph_paradigms(filepath: Path) -> list[Paradigm]:
     with inflection_filepath.open(encoding="utf-8", mode="r") as inflections_file:
         for line in tqdm(inflections_file, desc="Loading Inflections (Latin, Unimorph)"):
             base, inflection, tags, segmentation = line.strip().split("\t")
-            base, inflection, segmentation = \
-                remove_macrons(base), remove_macrons(inflection), remove_macrons(segmentation)
+            base, inflection, segmentation = (
+                remove_macrons(base),
+                remove_macrons(inflection),
+                remove_macrons(segmentation),
+            )
 
             tagged_segmentation: tuple[str, list[str]] = (tags, segmentation.split("|"))
             if base not in inflections:
@@ -52,7 +59,9 @@ def construct_latin_unimorph_paradigms(filepath: Path) -> list[Paradigm]:
                 inflections[base].append(tagged_segmentation)
 
     # Finally, we combine this information into paradigms.
-    for headword, tagged_segmentations in tqdm(inflections.items(), desc="Loading Paradigms (Latin, Unimorph)"):
+    for headword, tagged_segmentations in tqdm(
+        inflections.items(), desc="Loading Paradigms (Latin, Unimorph)"
+    ):
         # First, across the paradigm, we take inflections into account.
         derivational_affix_count: int = 0
         current_derivations: list[str] = [headword]
@@ -60,15 +69,17 @@ def construct_latin_unimorph_paradigms(filepath: Path) -> list[Paradigm]:
         while len(current_derivations) > 0:
             current_derivation = current_derivations.pop(0)
             if current_derivation in prior_derivations:
-                continue   # It's possible to get in an infinite loop due to circular derivations.
+                continue  # It's possible to get in an infinite loop due to circular derivations.
             elif derivations.get(current_derivation, None) is not None:
                 derivational_affix_count += len(derivations[current_derivation])
                 prior_derivations.append(current_derivation)
-                current_derivations.extend({base for (base, affix) in derivations[current_derivation]})
+                current_derivations.extend(
+                    {base for (base, affix) in derivations[current_derivation]}
+                )
 
         # Second, we take into account the number of morphemes in each inflection.
         paradigm: Paradigm = {}
-        for (tag, segmentation) in tagged_segmentations:
+        for tag, segmentation in tagged_segmentations:
             paradigm["".join(segmentation)] = derivational_affix_count + len(segmentation)
         else:
             paradigms.append(paradigm)
