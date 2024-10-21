@@ -8,7 +8,6 @@ from .constants import (
     DEFAULT_TOKENIZER_FILEPATHS,
     NamedLanguageModel,
     SubwordTokenizer,
-    DEFAULT_PARADIGM_FILEPATHS,
 )
 
 
@@ -43,14 +42,11 @@ def get_tokenizer(
 
 
 def resolve_filepaths(kwargs: dict[str, Any]):
-    for key in ("paradigm_filepath", "tokenizer_filepath"):
+    for key in ("tokenizer_filepath",):
         if kwargs.get(key, None) is None:
             raise ValueError(f"<{key}> was not defined.")
         elif kwargs[key] == "auto":
-            if key == "paradigm_filepath":
-                table = DEFAULT_PARADIGM_FILEPATHS
-                table_key = kwargs["language"]
-            elif key == "tokenizer_filepath":
+            if key == "tokenizer_filepath":
                 table = DEFAULT_TOKENIZER_FILEPATHS
                 table_key = kwargs["language_model"]
             else:

@@ -5,8 +5,10 @@ from typing import Any, Callable, TypeAlias, Union
 from transformers import PreTrainedTokenizer
 from tensor2tensor.data_generators.text_encoder import SubwordTextEncoder
 
+DerivationMap: TypeAlias = dict[str, list[tuple[str, str]]]
+InflectionMap: TypeAlias = dict[str, list[tuple[str, list[str]]]]
 Paradigm: TypeAlias = dict[str, int]
-ParadigmConstructor: TypeAlias = Callable[[Path], list[Paradigm]]
+ParadigmConstructor: TypeAlias = Callable[[DerivationMap, InflectionMap], list[Paradigm]]
 SubwordTokenizer: TypeAlias = Union[PreTrainedTokenizer, SubwordTextEncoder]
 ParadigmMetric: TypeAlias = Callable[[SubwordTokenizer, list[Paradigm], dict[str, Any]], float]
 
@@ -25,6 +27,11 @@ class NamedTokenizationMetric(StrEnum):
     PARADIGM_COHERENCE: str = "paradigm-coherence"
 
 
+class TokenizationDataSource(StrEnum):
+    UNIMORPH: str = "unimorph"
+    WORD_FORMATION_LEXICON: str = "wfl"
+
+
 class TokenizationLanguage(StrEnum):
     LATIN: str = "latin"
 
@@ -39,10 +46,6 @@ MODELS_BY_LANGUAGE: dict[str, set[str]] = {
         NamedLanguageModel.PHILBERTA,
         NamedLanguageModel.SPHILBERTA,
     }
-}
-
-DEFAULT_PARADIGM_FILEPATHS: dict[TokenizationLanguage, Path] = {
-    TokenizationLanguage.LATIN: Path("data/unimorph/lat")
 }
 
 DEFAULT_TOKENIZER_FILEPATHS: dict[NamedLanguageModel, Path] = {

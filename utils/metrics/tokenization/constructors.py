@@ -1,64 +1,98 @@
+from itertools import product
 from pathlib import Path
+from typing import Callable
 
-from cltk.alphabet.lat import remove_macrons
+from cltk.alphabet.lat import remove_accents, remove_macrons
 from tqdm import tqdm
 
-from .constants import Paradigm, ParadigmConstructor, TokenizationLanguage
+from .constants import (
+    DerivationMap,
+    InflectionMap,
+    Paradigm,
+    ParadigmConstructor,
+    TokenizationDataSource,
+    TokenizationLanguage,
+)
 
 
-def construct_paradigms(filepath: Path, language: TokenizationLanguage) -> list[Paradigm]:
+DEFAULT_DERIVATION_FILEPATHS: dict[tuple[TokenizationLanguage, TokenizationDataSource], Path] = {
+    (TokenizationLanguage.LATIN, TokenizationDataSource.UNIMORPH): Path(
+        "data/unimorph/lat/lat.derivations"
+    ),
+    (TokenizationLanguage.LATIN, TokenizationDataSource.WORD_FORMATION_LEXICON): Path(
+        "data/word-formation-lexicon/wfl_derivations.tsv"
+    ),
+}
+
+DEFAULT_INFLECTION_FILEPATHS: dict[tuple[TokenizationLanguage, TokenizationDataSource], Path] = {
+    (TokenizationLanguage.LATIN, TokenizationDataSource.UNIMORPH): Path(
+        "data/unimorph/lat/lat.segmentations"
+    )
+}
+
+
+def construct_paradigms(
+    derivation_source: TokenizationDataSource,
+    inflection_source: TokenizationDataSource,
+    language: TokenizationLanguage,
+) -> list[Paradigm]:
     match language:
         case TokenizationLanguage.LATIN:
-            paradigm_builder: ParadigmConstructor = construct_latin_unimorph_paradigms
+            paradigm_builder: ParadigmConstructor = construct_latin_paradigms
+            match derivation_source:
+                case TokenizationDataSource.UNIMORPH:
+                    derivation_function: Callable = load_unimorph_derivations
+                case TokenizationDataSource.WORD_FORMATION_LEXICON:
+                    derivation_function: Callable = load_wfl_derivations
+                case _:
+                    raise ValueError(
+                        f"The derivation source <{derivation_source}> is not recognized."
+                    )
+
+            try:
+                derivation_location: Path = DEFAULT_DERIVATION_FILEPATHS[
+                    (language, derivation_source)
+                ]
+            except KeyError:
+                raise ValueError(
+                    f"The derivation source <{derivation_source}> is not recognized for "
+                    f"<{language}>."
+                )
+
+            derivations: DerivationMap = derivation_function(derivation_location)
+
+            match inflection_source:
+                case TokenizationDataSource.UNIMORPH:
+                    inflection_function: Callable = load_unimorph_inflections
+                case _:
+                    raise ValueError(
+                        f"The inflection source <{inflection_source}> is not recognized."
+                    )
+
+            try:
+                inflection_location: Path = DEFAULT_INFLECTION_FILEPATHS[
+                    (language, inflection_source)
+                ]
+            except KeyError:
+                raise ValueError(
+                    f"The derivation source <{derivation_source}> is not recognized for "
+                    f"<{language}>."
+                )
+
+            inflections: InflectionMap = inflection_function(inflection_location)
         case _:
             raise ValueError(f"Language {language} not currently supported.")
 
-    paradigms: list[Paradigm] = paradigm_builder(filepath)
+    paradigms: list[Paradigm] = paradigm_builder(derivations, inflections)
     return paradigms
 
 
-def construct_latin_unimorph_paradigms(filepath: Path) -> list[Paradigm]:
+def construct_latin_paradigms(
+    derivations: DerivationMap, inflections: InflectionMap
+) -> list[Paradigm]:
     paradigms: list[Paradigm] = []
 
-    # First, we gather derivations.
-    derivation_filepath: Path = filepath.joinpath("lat.derivations")
-    derivations: dict[str, list[tuple[str, str]]] = {}
-    with derivation_filepath.open(encoding="utf-8", mode="r") as derivations_file:
-        for line in tqdm(derivations_file, desc="Loading Derivations (Latin, Unimorph)"):
-            base, derivation, _, affix = line.strip().split("\t")
-            base, derivation, affix = (
-                remove_macrons(base),
-                remove_macrons(derivation),
-                remove_macrons(affix),
-            )
-
-            if derivation not in derivations:
-                derivations[derivation] = []
-
-            affixed_base: tuple[str, str] = (base, affix)
-            if affixed_base not in derivations[derivation]:
-                derivations[derivation].append(affixed_base)
-
-    # Next, we gather inflections.
-    inflection_filepath: Path = filepath.joinpath("lat.segmentations")
-    inflections: dict[str, list[tuple[str, list[str]]]] = {}
-    with inflection_filepath.open(encoding="utf-8", mode="r") as inflections_file:
-        for line in tqdm(inflections_file, desc="Loading Inflections (Latin, Unimorph)"):
-            base, inflection, tags, segmentation = line.strip().split("\t")
-            base, inflection, segmentation = (
-                remove_macrons(base),
-                remove_macrons(inflection),
-                remove_macrons(segmentation),
-            )
-
-            tagged_segmentation: tuple[str, list[str]] = (tags, segmentation.split("|"))
-            if base not in inflections:
-                inflections[base] = []
-
-            if tagged_segmentation not in inflections[base] and segmentation != "-":
-                inflections[base].append(tagged_segmentation)
-
-    # Finally, we combine this information into paradigms.
+    # We combine derivation and inflection information into paradigms.
     for headword, tagged_segmentations in tqdm(
         inflections.items(), desc="Loading Paradigms (Latin, Unimorph)"
     ):
@@ -85,3 +119,87 @@ def construct_latin_unimorph_paradigms(filepath: Path) -> list[Paradigm]:
             paradigms.append(paradigm)
 
     return paradigms
+
+
+def load_unimorph_derivations(derivation_filepath: Path) -> DerivationMap:
+    derivations: DerivationMap = {}
+    with derivation_filepath.open(encoding="utf-8", mode="r") as derivations_file:
+        for line in tqdm(derivations_file, desc="Loading Derivations (Latin, Unimorph)"):
+            base, derivation, _, affix = line.strip().split("\t")
+            base, derivation, affix = (
+                remove_macrons(base),
+                remove_macrons(derivation),
+                remove_macrons(affix),
+            )
+
+            if derivation not in derivations:
+                derivations[derivation] = []
+
+            affixed_base: tuple[str, str] = (base, affix)
+            if affixed_base not in derivations[derivation]:
+                derivations[derivation].append(affixed_base)
+
+    return derivations
+
+
+def load_wfl_derivations(derivation_filepath: Path) -> DerivationMap:
+    derivations: DerivationMap = {}
+    with derivation_filepath.open(encoding="utf-8", mode="r") as derivations_file:
+        for line in tqdm(derivations_file, desc="Loading Derivations (Latin, WFL)"):
+            base, derivation, _, affix, *_ = line.strip().split("\t")
+            base, derivation, affix = (
+                remove_macrons(remove_accents(base)),
+                remove_macrons(remove_accents(derivation)),
+                remove_macrons(remove_accents(affix)),
+            )
+
+            base_alternates: list[str] = []
+            for form in base.split("/"):
+                if form.startswith("-"):
+                    # In this case, an alternate inflection is given.
+                    # In the future, I could attempt to integrate these in a systematic way,
+                    #   as the notation does not lend itself to determining forms readily.
+                    continue
+                else:
+                    base_alternates.append(form)
+
+            derivation_alternates: list[str] = []
+            for form in derivation.split("/"):
+                if form.startswith("-"):
+                    # In this case, an alternate inflection is given.
+                    # In the future, I could attempt to integrate these in a systematic way,
+                    #   as the notation does not lend itself to determining forms readily.
+                    continue
+                else:
+                    derivation_alternates.append(form)
+
+            for base, derivation in product(base_alternates, derivation_alternates):
+                if derivation not in derivations:
+                    derivations[derivation] = []
+
+                affixed_base: tuple[str, str] = (base, affix)
+                if affixed_base not in derivations[derivation]:
+                    derivations[derivation].append(affixed_base)
+
+    return derivations
+
+
+def load_unimorph_inflections(inflection_filepath: Path) -> InflectionMap:
+    inflections: InflectionMap = {}
+    with inflection_filepath.open(encoding="utf-8", mode="r") as inflections_file:
+        for line in tqdm(inflections_file, desc="Loading Inflections (Latin, Unimorph)"):
+            base, inflection, tags, segmentation = line.strip().split("\t")
+            base, inflection, segmentation = (
+                remove_macrons(base),
+                remove_macrons(inflection),
+                remove_macrons(segmentation),
+            )
+
+            tagged_segmentation: tuple[str, list[str]] = (tags, segmentation.split("|"))
+            if base not in inflections:
+                inflections[base] = []
+
+            if tagged_segmentation not in inflections[base] and segmentation != "-":
+                inflections[base].append(tagged_segmentation)
+
+    return inflections

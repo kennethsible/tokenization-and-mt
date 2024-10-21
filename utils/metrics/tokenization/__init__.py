@@ -1,16 +1,26 @@
 from .constants import (
+    DerivationMap,
+    InflectionMap,
     NamedLanguageModel,
     NamedTokenizationMetric,
     Paradigm,
     ParadigmConstructor,
     ParadigmMetric,
     SubwordTokenizer,
+    TokenizationDataSource,
     TokenizationLanguage,
-    DEFAULT_PARADIGM_FILEPATHS,
     DEFAULT_TOKENIZER_FILEPATHS,
     MODELS_BY_LANGUAGE,
 )
-from .constructors import construct_paradigms, construct_latin_unimorph_paradigms
+from .constructors import (
+    construct_latin_paradigms,
+    construct_paradigms,
+    load_unimorph_inflections,
+    load_unimorph_derivations,
+    load_wfl_derivations,
+    DEFAULT_DERIVATION_FILEPATHS,
+    DEFAULT_INFLECTION_FILEPATHS,
+)
 from .helpers import get_tokenizer, resolve_filepaths, retrieve_default_filepath
 from .metrics import compute_paradigm_coherence, METRIC_MAPPING
 
