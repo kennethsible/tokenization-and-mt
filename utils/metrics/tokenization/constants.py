@@ -5,12 +5,23 @@ from typing import Any, Callable, TypeAlias, Union
 from transformers import PreTrainedTokenizer
 from tensor2tensor.data_generators.text_encoder import SubwordTextEncoder
 
+from utils.data.corpora import BaseCorpusDataset
+
 DerivationMap: TypeAlias = dict[str, list[tuple[str, str]]]
 InflectionMap: TypeAlias = dict[str, list[tuple[str, list[str]]]]
 Paradigm: TypeAlias = dict[str, int]
 ParadigmConstructor: TypeAlias = Callable[[DerivationMap, InflectionMap], list[Paradigm]]
 SubwordTokenizer: TypeAlias = Union[PreTrainedTokenizer, SubwordTextEncoder]
+
+CorpusMetric: TypeAlias = Callable[
+    [SubwordTokenizer, BaseCorpusDataset, dict[str, Any], ...], float
+]
 ParadigmMetric: TypeAlias = Callable[[SubwordTokenizer, list[Paradigm], dict[str, Any]], float]
+
+
+class MorphologyDataSource(StrEnum):
+    UNIMORPH: str = "unimorph"
+    WORD_FORMATION_LEXICON: str = "wfl"
 
 
 class NamedLanguageModel(StrEnum):
@@ -23,13 +34,13 @@ class NamedLanguageModel(StrEnum):
     SPHILBERTA: str = "sphilberta"
 
 
-class NamedTokenizationMetric(StrEnum):
+class NamedCorpusTokenizationMetric(StrEnum):
+    AVERAGE_TOKENS_PER_SENTENCE: str = "average-tps"
+    FERTILITY: str = "fertility"
+
+
+class NamedMorphologyTokenizationMetric(StrEnum):
     PARADIGM_COHERENCE: str = "paradigm-coherence"
-
-
-class TokenizationDataSource(StrEnum):
-    UNIMORPH: str = "unimorph"
-    WORD_FORMATION_LEXICON: str = "wfl"
 
 
 class TokenizationLanguage(StrEnum):
@@ -49,13 +60,13 @@ MODELS_BY_LANGUAGE: dict[str, set[str]] = {
 }
 
 DEFAULT_TOKENIZER_FILEPATHS: dict[NamedLanguageModel, Path] = {
-    NamedLanguageModel.CANINE_C: Path("resources/canine-c"),
-    NamedLanguageModel.CANINE_S: Path("resources/canine-s"),
+    NamedLanguageModel.CANINE_C: Path("resources/multi/canine-c"),
+    NamedLanguageModel.CANINE_S: Path("resources/multi/canine-s"),
     NamedLanguageModel.LATIN_BERT: Path(
-        "resources/latin-bert/subword_tokenizer_latin/latin.subword.encoder"
+        "resources/lat/latin-bert/subword_tokenizer_latin/latin.subword.encoder"
     ),
-    NamedLanguageModel.MULTILINGUAL_BERT: Path("resources/mbert"),
-    NamedLanguageModel.LABERTA: Path("resources/laberta"),
-    NamedLanguageModel.PHILBERTA: Path("resources/philberta"),
-    NamedLanguageModel.SPHILBERTA: Path("resources/sphilberta"),
+    NamedLanguageModel.MULTILINGUAL_BERT: Path("resources/multi/mbert"),
+    NamedLanguageModel.LABERTA: Path("resources/lat/laberta"),
+    NamedLanguageModel.PHILBERTA: Path("resources/multi/philberta"),
+    NamedLanguageModel.SPHILBERTA: Path("resources/multi/sphilberta"),
 }

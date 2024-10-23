@@ -8,41 +8,41 @@ from tqdm import tqdm
 from .constants import (
     DerivationMap,
     InflectionMap,
+    MorphologyDataSource,
     Paradigm,
     ParadigmConstructor,
-    TokenizationDataSource,
     TokenizationLanguage,
 )
 
 
-DEFAULT_DERIVATION_FILEPATHS: dict[tuple[TokenizationLanguage, TokenizationDataSource], Path] = {
-    (TokenizationLanguage.LATIN, TokenizationDataSource.UNIMORPH): Path(
+DEFAULT_DERIVATION_FILEPATHS: dict[tuple[TokenizationLanguage, MorphologyDataSource], Path] = {
+    (TokenizationLanguage.LATIN, MorphologyDataSource.UNIMORPH): Path(
         "data/unimorph/lat/lat.derivations"
     ),
-    (TokenizationLanguage.LATIN, TokenizationDataSource.WORD_FORMATION_LEXICON): Path(
+    (TokenizationLanguage.LATIN, MorphologyDataSource.WORD_FORMATION_LEXICON): Path(
         "data/word-formation-lexicon/wfl_derivations.tsv"
     ),
 }
 
-DEFAULT_INFLECTION_FILEPATHS: dict[tuple[TokenizationLanguage, TokenizationDataSource], Path] = {
-    (TokenizationLanguage.LATIN, TokenizationDataSource.UNIMORPH): Path(
+DEFAULT_INFLECTION_FILEPATHS: dict[tuple[TokenizationLanguage, MorphologyDataSource], Path] = {
+    (TokenizationLanguage.LATIN, MorphologyDataSource.UNIMORPH): Path(
         "data/unimorph/lat/lat.segmentations"
     )
 }
 
 
 def construct_paradigms(
-    derivation_source: TokenizationDataSource,
-    inflection_source: TokenizationDataSource,
+    derivation_source: MorphologyDataSource,
+    inflection_source: MorphologyDataSource,
     language: TokenizationLanguage,
 ) -> list[Paradigm]:
     match language:
         case TokenizationLanguage.LATIN:
             paradigm_builder: ParadigmConstructor = construct_latin_paradigms
             match derivation_source:
-                case TokenizationDataSource.UNIMORPH:
+                case MorphologyDataSource.UNIMORPH:
                     derivation_function: Callable = load_unimorph_derivations
-                case TokenizationDataSource.WORD_FORMATION_LEXICON:
+                case MorphologyDataSource.WORD_FORMATION_LEXICON:
                     derivation_function: Callable = load_wfl_derivations
                 case _:
                     raise ValueError(
@@ -62,7 +62,7 @@ def construct_paradigms(
             derivations: DerivationMap = derivation_function(derivation_location)
 
             match inflection_source:
-                case TokenizationDataSource.UNIMORPH:
+                case MorphologyDataSource.UNIMORPH:
                     inflection_function: Callable = load_unimorph_inflections
                 case _:
                     raise ValueError(

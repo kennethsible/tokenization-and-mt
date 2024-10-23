@@ -8,7 +8,7 @@ import sentencepiece as spm
 import unicodedata
 from tqdm import tqdm
 
-from utils.data.vulgate_loader import VulgateDataset
+from utils.data.preprocessing.vulgate_loader import VulgateDataset
 
 
 NEWLINE_PATTERN: str = r"\\n.+$"

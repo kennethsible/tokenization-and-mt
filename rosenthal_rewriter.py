@@ -4,7 +4,7 @@ from typing import TextIO
 
 from tqdm import tqdm
 
-from utils.data.parquet_loader import RosenthalDataset
+from utils.data.preprocessing.parquet_loader import RosenthalDataset
 
 
 DEFAULT_INPUT_PATH: Path = Path("data", "rosenthal", "original")

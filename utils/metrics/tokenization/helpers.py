@@ -11,58 +11,84 @@ from .constants import (
 )
 
 
-def get_tokenizer(
-    lm_name: NamedLanguageModel, filepath: str
-) -> tuple[SubwordTokenizer, dict[str, Any]]:
-    match lm_name:
-        case NamedLanguageModel.LATIN_BERT:
-            subword_tokenizer: SubwordTextEncoder = SubwordTextEncoder(filepath)
-            tokenizer_kwargs: dict[str, Any] = {}
-        case (
-            NamedLanguageModel.LABERTA
-            | NamedLanguageModel.PHILBERTA
-            | NamedLanguageModel.SPHILBERTA
-            | NamedLanguageModel.MULTILINGUAL_BERT
-        ):
-            tokenizer_class: Type[PreTrainedTokenizer] = (
-                BertTokenizer
-                if lm_name == NamedLanguageModel.MULTILINGUAL_BERT
-                else RobertaTokenizer
-            )
-            subword_tokenizer: PreTrainedTokenizer = tokenizer_class.from_pretrained(filepath)
-            tokenizer_kwargs: dict[str, Any] = {"add_special_tokens": False}
-        case NamedLanguageModel.CANINE_C | NamedLanguageModel.CANINE_S:
-            # We do not need to make use of the pretrained filepaths, since CANINE's tokenizer is the same regardless.
-            subword_tokenizer: CanineTokenizer = CanineTokenizer()
-            tokenizer_kwargs: dict[str, Any] = {"add_special_tokens": False}
-        case _:
-            raise ValueError(f"The language model <{lm_name}> is not currently recognized.")
+def get_tokenizers(
+    language_model_names: list[NamedLanguageModel], tokenizer_filepaths: list[Path]
+) -> list[tuple[SubwordTokenizer, dict[str, Any]]]:
+    assert len(language_model_names) == len(tokenizer_filepaths)
 
-    return subword_tokenizer, tokenizer_kwargs
+    tokenizers: list[SubwordTokenizer] = []
+    tokenizer_arguments: list[dict[str, Any]] = []
+    for i in range(0, len(language_model_names)):
+        language_model: str = language_model_names[i]
+        tokenizer_filepath: Path = tokenizer_filepaths[i]
+        match language_model:
+            case NamedLanguageModel.LATIN_BERT:
+                subword_tokenizer: SubwordTextEncoder = SubwordTextEncoder(tokenizer_filepath)
+                tokenizer_kwargs: dict[str, Any] = {}
+            case (
+                NamedLanguageModel.LABERTA
+                | NamedLanguageModel.PHILBERTA
+                | NamedLanguageModel.SPHILBERTA
+                | NamedLanguageModel.MULTILINGUAL_BERT
+            ):
+                tokenizer_class: Type[PreTrainedTokenizer] = (
+                    BertTokenizer
+                    if language_model == NamedLanguageModel.MULTILINGUAL_BERT
+                    else RobertaTokenizer
+                )
+                subword_tokenizer: PreTrainedTokenizer = tokenizer_class.from_pretrained(
+                    tokenizer_filepath
+                )
+                tokenizer_kwargs: dict[str, Any] = {"add_special_tokens": False}
+            case NamedLanguageModel.CANINE_C | NamedLanguageModel.CANINE_S:
+                # We do not need to make use of the pretrained filepaths,
+                # since CANINE's tokenizer is the same regardless.
+                subword_tokenizer: CanineTokenizer = CanineTokenizer()
+                tokenizer_kwargs: dict[str, Any] = {"add_special_tokens": False}
+            case _:
+                raise ValueError(
+                    f"The language model <{language_model}> is not currently recognized."
+                )
+
+        tokenizers.append(subword_tokenizer)
+        tokenizer_arguments.append(tokenizer_kwargs)
+
+    full_tokenizers: list[tuple[SubwordTokenizer, dict[str, Any]]] = zip(
+        tokenizers, tokenizer_arguments
+    )
+    return full_tokenizers
 
 
-def resolve_filepaths(kwargs: dict[str, Any]):
-    for key in ("tokenizer_filepath",):
-        if kwargs.get(key, None) is None:
-            raise ValueError(f"<{key}> was not defined.")
-        elif kwargs[key] == "auto":
-            if key == "tokenizer_filepath":
-                table = DEFAULT_TOKENIZER_FILEPATHS
-                table_key = kwargs["language_model"]
-            else:
-                raise ValueError(f"<{key}> for embedding-related filepaths not recognized.")
+def collect_tokenizer_filepaths(
+    language_models: list[NamedLanguageModel], tokenizer_path_selections: list[str]
+):
+    assert len(language_models) == len(tokenizer_path_selections) or (
+        len(tokenizer_path_selections) == 1 and tokenizer_path_selections[-1] == "auto"
+    )
 
-            kwargs[key] = retrieve_default_filepath(table_key, key, table)
+    if len(language_models) == len(tokenizer_path_selections):
+        model_path_pairs: tuple[str, str] = zip(language_models, tokenizer_path_selections)
+    else:
+        model_path_pairs = zip(language_models, tokenizer_path_selections * len(language_models))
+
+    tokenizer_filepaths: list[Path] = []
+    for language_model, tokenizer_filepath in model_path_pairs:
+        if tokenizer_filepath == "auto":
+            tokenizer_filepath: Path = retrieve_default_filepath(language_model)
         else:
-            continue
+            tokenizer_filepath: Path = Path(tokenizer_filepath)
+
+        tokenizer_filepaths.append(tokenizer_filepath)
+
+    return tokenizer_filepaths
 
 
-def retrieve_default_filepath(table_key: str, key: str, table: dict[str, Path]) -> Path:
+def retrieve_default_filepath(language_model: NamedLanguageModel) -> Path:
     try:
-        default_filepath: Path = table[table_key]
+        default_filepath: Path = DEFAULT_TOKENIZER_FILEPATHS[language_model]
     except KeyError:
         raise ValueError(
-            f"The table key <{table_key}> is not present in the table for key <{key}> "
+            f"The language model <{language_model}> does not currently have a default filepath."
         )
 
     return default_filepath

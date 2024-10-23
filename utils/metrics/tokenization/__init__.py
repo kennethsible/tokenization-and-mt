@@ -1,13 +1,15 @@
 from .constants import (
+    CorpusMetric,
     DerivationMap,
     InflectionMap,
+    MorphologyDataSource,
+    NamedCorpusTokenizationMetric,
     NamedLanguageModel,
-    NamedTokenizationMetric,
+    NamedMorphologyTokenizationMetric,
     Paradigm,
     ParadigmConstructor,
     ParadigmMetric,
     SubwordTokenizer,
-    TokenizationDataSource,
     TokenizationLanguage,
     DEFAULT_TOKENIZER_FILEPATHS,
     MODELS_BY_LANGUAGE,
@@ -21,13 +23,22 @@ from .constructors import (
     DEFAULT_DERIVATION_FILEPATHS,
     DEFAULT_INFLECTION_FILEPATHS,
 )
-from .helpers import get_tokenizer, resolve_filepaths, retrieve_default_filepath
-from .metrics import compute_paradigm_coherence, METRIC_MAPPING
+from .helpers import collect_tokenizer_filepaths, get_tokenizers, retrieve_default_filepath
+from .metrics import compute_paradigm_coherence, CORPUS_METRIC_MAPPING, MORPHOLOGY_METRIC_MAPPING
 
 
-def get_tokenization_metric(metric: str):
+def get_tokenization_corpus_metric(metric: str):
     try:
-        metric_function: ParadigmMetric = METRIC_MAPPING[metric]
+        metric_function: CorpusMetric = CORPUS_METRIC_MAPPING[metric]
+    except KeyError:
+        raise ValueError(f"The metric <{metric}> is not currently supported.")
+
+    return metric_function
+
+
+def get_tokenization_morphology_metric(metric: str):
+    try:
+        metric_function: ParadigmMetric = MORPHOLOGY_METRIC_MAPPING[metric]
     except KeyError:
         raise ValueError(f"The metric <{metric}> is not currently supported.")
 
