@@ -51,16 +51,53 @@ def compute_average_tps(
     tokenizer: SubwordTokenizer,
     corpus: BaseCorpusDataset,
     tokenizer_kwargs: dict[str, Any],
-    **kwargs
+    processes: int = 1,
+    chunk_size: int = 1,
 ) -> float:
-    sentence_lengths: list[int] = []
-    for sentence in tqdm(corpus, desc="Checking Corpus Average Tokens-per-Sentence"):
-        tokenized_sentence: list[int] = tokenizer.encode(sentence, **tokenizer_kwargs)
-        tokenized_sentence_length: int = len(tokenized_sentence)
-        sentence_lengths.append(tokenized_sentence_length)
+    sentence_length_map: dict[int, int] = {}
+    if processes > 1:
+        static_kwargs: dict[str, Any] = {
+            "tokenizer": tokenizer,
+            "tokenizer_kwargs": tokenizer_kwargs,
+        }
+        with Pool(processes=processes) as pool:
+            with tqdm(total=len(corpus), desc="Checking Corpus TPS") as completion_tracker:
+                tps_partial: partial = partial(get_mapped_sentence_count, **static_kwargs)
+                for result in pool.imap_unordered(
+                    tps_partial, enumerate(corpus), chunksize=chunk_size
+                ):
+                    key, value = result
+                    sentence_length_map[key] = value
+                    completion_tracker.update()
+    else:
+        for sentence_index, sentence in tqdm(enumerate(corpus), desc="Checking Corpus Average TPS"):
+            # noinspection PyTypeChecker
+            tokenized_sentence_length: int = get_sentence_token_count(
+                tokenizer, tokenizer_kwargs, sentence
+            )
+            sentence_length_map[sentence_index] = tokenized_sentence_length
 
-    average_tokens_per_sentence: float = sum(sentence_lengths) / len(corpus)
+    sentence_lengths: list[int] = list(sentence_length_map.values())
+    assert len(sentence_lengths) == len(corpus)
+
+    average_tokens_per_sentence: float = sum(sentence_lengths) / len(sentence_lengths)
     return average_tokens_per_sentence
+
+
+def get_sentence_token_count(
+    tokenizer: SubwordTokenizer, tokenizer_kwargs: dict[str, Any], sentence: str
+) -> int:
+    tokenized_sentence: list[int] = tokenizer.encode(sentence, **tokenizer_kwargs)
+    tokenized_sentence_length: int = len(tokenized_sentence)
+    return tokenized_sentence_length
+
+
+def get_mapped_sentence_count(
+    sentence: tuple[int, str], tokenizer: SubwordTokenizer, tokenizer_kwargs: dict[str, Any]
+) -> tuple[int, int]:
+    sentence_id, sentence_text = sentence
+    sentence_token_count: int = get_sentence_token_count(tokenizer, tokenizer_kwargs, sentence_text)
+    return sentence_id, sentence_token_count
 
 
 def compute_average_fertility(

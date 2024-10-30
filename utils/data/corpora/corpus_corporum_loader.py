@@ -1,4 +1,3 @@
-from os import walk
 from pathlib import Path
 
 # noinspection PyPep8Naming
