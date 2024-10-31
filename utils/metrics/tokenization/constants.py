@@ -1,6 +1,6 @@
 from enum import StrEnum
 from pathlib import Path
-from typing import Any, Callable, TypeAlias, Union
+from typing import Any, Callable, NamedTuple, TypeAlias, Union
 
 from transformers import PreTrainedTokenizer
 from tensor2tensor.data_generators.text_encoder import SubwordTextEncoder
@@ -9,7 +9,18 @@ from utils.data.corpora import BaseCorpusDataset
 
 DerivationMap: TypeAlias = dict[str, list[tuple[str, str]]]
 InflectionMap: TypeAlias = dict[str, list[tuple[str, list[str]]]]
-Paradigm: TypeAlias = dict[str, int]
+
+
+class MorphemeTable(NamedTuple):
+    derivations: int
+    inflections: int
+    stem: int = 1
+
+    def count_morphemes(self):
+        return self.derivations + self.inflections + self.stem
+
+
+Paradigm: TypeAlias = dict[str, MorphemeTable]
 ParadigmConstructor: TypeAlias = Callable[[DerivationMap, InflectionMap], list[Paradigm]]
 SubwordTokenizer: TypeAlias = Union[PreTrainedTokenizer, SubwordTextEncoder]
 
@@ -40,6 +51,7 @@ class NamedCorpusTokenizationMetric(StrEnum):
 
 
 class NamedMorphologyTokenizationMetric(StrEnum):
+    DERIVATIONALLY_AWARE_PARADIGM_COHERENCE: str = "da-paradigm-coherence"
     PARADIGM_ADHERENCE: str = "paradigm-adherence"
     PARADIGM_COHERENCE: str = "paradigm-coherence"
 

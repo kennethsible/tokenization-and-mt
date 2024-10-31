@@ -24,7 +24,14 @@ from .constructors import (
     DEFAULT_INFLECTION_FILEPATHS,
 )
 from .helpers import collect_tokenizer_filepaths, get_tokenizers, retrieve_default_filepath
-from .metrics import compute_paradigm_coherence, CORPUS_METRIC_MAPPING, MORPHOLOGY_METRIC_MAPPING
+from .metrics import (
+    compute_paradigm_adherence,
+    compute_paradigm_coherence,
+    compute_average_fertility,
+    compute_average_tps,
+    CORPUS_METRIC_MAPPING,
+    MORPHOLOGY_METRIC_MAPPING
+)
 
 
 def get_tokenization_corpus_metric(metric: str):

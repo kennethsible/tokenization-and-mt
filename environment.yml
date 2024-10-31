@@ -22,5 +22,6 @@ dependencies:
   - transformers
   - pip:
     - cltk
+    - multiset
     - subword-nmt
     - tensor2tensor

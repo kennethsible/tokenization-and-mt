@@ -1,6 +1,9 @@
 from functools import partial
+from itertools import combinations
 from multiprocessing import Pool
-from typing import Any
+from typing import Any, Optional, Sequence
+
+from multiset import FrozenMultiset
 
 from tqdm import tqdm
 
@@ -25,7 +28,7 @@ def compute_paradigm_adherence(
         tokenizations: list[list[int]] = [
             tokenizer.encode(form, **tokenizer_kwargs) for form in forms
         ]
-        expected_tokenization_lengths: list[int] = [paradigm[form] for form in forms]
+        expected_tokenization_lengths: list[int] = [paradigm[form].count_morphemes() for form in forms]
         actual_tokenization_lengths: list[int] = [
             len(tokenization) for tokenization in tokenizations
         ]
@@ -62,7 +65,7 @@ def compute_paradigm_coherence(
             tokens.update(set(tokenization))
 
         maximally_cohering_token: int = -1
-        maximally_cohering_value: int = -1
+        maximally_cohering_value: int = 0
         for token in tokens:
             token_coherence: int = sum([token in tokenization for tokenization in tokenizations])
             if maximally_cohering_token == -1 or token_coherence > maximally_cohering_value:
@@ -72,6 +75,50 @@ def compute_paradigm_coherence(
             else:
                 continue
         else:
+            assert maximally_cohering_value <= len(forms)
+            total_coherence += maximally_cohering_value
+            total_forms += len(forms)
+
+    paradigm_coherence: float = total_coherence / total_forms
+    return paradigm_coherence
+
+
+def compute_da_paradigm_coherence(
+    tokenizer: SubwordTokenizer, paradigms: list[Paradigm], tokenizer_kwargs: dict[str, Any]
+) -> float:
+    total_coherence: int = 0
+    total_forms: int = 0
+    for paradigm in tqdm(paradigms, desc="Examining Paradigms for DA Coherence"):
+        forms: list[str] = list(paradigm.keys())
+        tokenizations: list[list[int]] = [tokenizer.encode(form, **tokenizer_kwargs) for form in forms]
+
+        derivational_affix_count: int = paradigm[forms[0]].derivations
+        for form in forms:
+            assert derivational_affix_count == paradigm[form].derivations
+
+        token_sets: set[FrozenMultiset[int]] = set()
+        for tokenization in tokenizations:
+            token_combinations: list[Sequence[int]] = combinations(tokenization, derivational_affix_count + 1)
+            token_multisets: list[FrozenMultiset[int]] = \
+                [FrozenMultiset(combination) for combination in token_combinations]
+            token_sets.update(token_multisets)
+
+        multiset_tokenizations: list[FrozenMultiset[int]] = \
+            [FrozenMultiset(tokenization) for tokenization in tokenizations]
+        maximally_cohering_token_set: Optional[FrozenMultiset[int]] = None
+        maximally_cohering_value: int = 0
+        for token_set in token_sets:
+            token_coherence: int = sum(
+                [token_set.intersection(tokenization) == token_set for tokenization in multiset_tokenizations]
+            )
+            if maximally_cohering_token_set is None or token_coherence > maximally_cohering_value:
+                # For now, the first item found takes precedence. Ties could be broken in another way.
+                maximally_cohering_token_set = token_set
+                maximally_cohering_value = token_coherence
+            else:
+                continue
+        else:
+            assert maximally_cohering_value <= len(forms)
             total_coherence += maximally_cohering_value
             total_forms += len(forms)
 
@@ -203,6 +250,7 @@ CORPUS_METRIC_MAPPING: dict[str, CorpusMetric] = {
 }
 
 MORPHOLOGY_METRIC_MAPPING: dict[str, ParadigmMetric] = {
+    NamedMorphologyTokenizationMetric.DERIVATIONALLY_AWARE_PARADIGM_COHERENCE: compute_da_paradigm_coherence,
     NamedMorphologyTokenizationMetric.PARADIGM_ADHERENCE: compute_paradigm_adherence,
     NamedMorphologyTokenizationMetric.PARADIGM_COHERENCE: compute_paradigm_coherence,
 }

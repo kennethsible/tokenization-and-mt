@@ -8,6 +8,7 @@ from tqdm import tqdm
 from .constants import (
     DerivationMap,
     InflectionMap,
+    MorphemeTable,
     MorphologyDataSource,
     Paradigm,
     ParadigmConstructor,
@@ -114,7 +115,7 @@ def construct_latin_paradigms(
         # Second, we take into account the number of morphemes in each inflection.
         paradigm: Paradigm = {}
         for tag, segmentation in tagged_segmentations:
-            paradigm["".join(segmentation)] = derivational_affix_count + len(segmentation)
+            paradigm["".join(segmentation)] = MorphemeTable(derivational_affix_count, len(segmentation) - 1)
         else:
             paradigms.append(paradigm)
 
