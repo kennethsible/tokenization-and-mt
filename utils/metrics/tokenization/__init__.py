@@ -30,7 +30,7 @@ from .metrics import (
     compute_average_fertility,
     compute_average_tps,
     CORPUS_METRIC_MAPPING,
-    MORPHOLOGY_METRIC_MAPPING
+    MORPHOLOGY_METRIC_MAPPING,
 )
 
 

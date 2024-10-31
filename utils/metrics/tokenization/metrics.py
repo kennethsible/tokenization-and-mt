@@ -28,7 +28,9 @@ def compute_paradigm_adherence(
         tokenizations: list[list[int]] = [
             tokenizer.encode(form, **tokenizer_kwargs) for form in forms
         ]
-        expected_tokenization_lengths: list[int] = [paradigm[form].count_morphemes() for form in forms]
+        expected_tokenization_lengths: list[int] = [
+            paradigm[form].count_morphemes() for form in forms
+        ]
         actual_tokenization_lengths: list[int] = [
             len(tokenization) for tokenization in tokenizations
         ]
@@ -90,7 +92,9 @@ def compute_da_paradigm_coherence(
     total_forms: int = 0
     for paradigm in tqdm(paradigms, desc="Examining Paradigms for DA Coherence"):
         forms: list[str] = list(paradigm.keys())
-        tokenizations: list[list[int]] = [tokenizer.encode(form, **tokenizer_kwargs) for form in forms]
+        tokenizations: list[list[int]] = [
+            tokenizer.encode(form, **tokenizer_kwargs) for form in forms
+        ]
 
         derivational_affix_count: int = paradigm[forms[0]].derivations
         for form in forms:
@@ -98,18 +102,25 @@ def compute_da_paradigm_coherence(
 
         token_sets: set[FrozenMultiset[int]] = set()
         for tokenization in tokenizations:
-            token_combinations: list[Sequence[int]] = combinations(tokenization, derivational_affix_count + 1)
-            token_multisets: list[FrozenMultiset[int]] = \
-                [FrozenMultiset(combination) for combination in token_combinations]
+            token_combinations: list[Sequence[int]] = combinations(
+                tokenization, derivational_affix_count + 1
+            )
+            token_multisets: list[FrozenMultiset[int]] = [
+                FrozenMultiset(combination) for combination in token_combinations
+            ]
             token_sets.update(token_multisets)
 
-        multiset_tokenizations: list[FrozenMultiset[int]] = \
-            [FrozenMultiset(tokenization) for tokenization in tokenizations]
+        multiset_tokenizations: list[FrozenMultiset[int]] = [
+            FrozenMultiset(tokenization) for tokenization in tokenizations
+        ]
         maximally_cohering_token_set: Optional[FrozenMultiset[int]] = None
         maximally_cohering_value: int = 0
         for token_set in token_sets:
             token_coherence: int = sum(
-                [token_set.intersection(tokenization) == token_set for tokenization in multiset_tokenizations]
+                [
+                    token_set.intersection(tokenization) == token_set
+                    for tokenization in multiset_tokenizations
+                ]
             )
             if maximally_cohering_token_set is None or token_coherence > maximally_cohering_value:
                 # For now, the first item found takes precedence. Ties could be broken in another way.
