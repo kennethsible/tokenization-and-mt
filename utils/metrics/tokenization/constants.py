@@ -40,6 +40,7 @@ class NamedCorpusTokenizationMetric(StrEnum):
 
 
 class NamedMorphologyTokenizationMetric(StrEnum):
+    PARADIGM_ADHERENCE: str = "paradigm-adherence"
     PARADIGM_COHERENCE: str = "paradigm-coherence"
 
 

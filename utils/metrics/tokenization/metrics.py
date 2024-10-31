@@ -15,12 +15,44 @@ from .constants import (
 from utils.data.corpora import BaseCorpusDataset
 
 
+def compute_paradigm_adherence(
+    tokenizer: SubwordTokenizer, paradigms: list[Paradigm], tokenizer_kwargs: dict[str, Any]
+) -> float:
+    total_adherence: float = 0.0
+    total_paradigms: int = 0
+    for paradigm in tqdm(paradigms, desc="Examining Paradigms for Adherence"):
+        forms: list[str] = list(paradigm.keys())
+        tokenizations: list[list[int]] = [
+            tokenizer.encode(form, **tokenizer_kwargs) for form in forms
+        ]
+        expected_tokenization_lengths: list[int] = [paradigm[form] for form in forms]
+        actual_tokenization_lengths: list[int] = [
+            len(tokenization) for tokenization in tokenizations
+        ]
+
+        assert len(expected_tokenization_lengths) == len(actual_tokenization_lengths)
+        form_deviations: list[int] = [
+            abs(expected_tokenization_lengths[i] - actual_tokenization_lengths[i])
+            for i in range(0, len(expected_tokenization_lengths))
+        ]
+
+        individual_deviation: int = sum(form_deviations)
+        individual_total: int = sum(expected_tokenization_lengths)
+        individual_adherence: float = max(0.0, 1 - (individual_deviation / individual_total))
+
+        total_adherence += individual_adherence
+        total_paradigms += 1
+
+    paradigm_adherence: float = total_adherence / total_paradigms
+    return paradigm_adherence
+
+
 def compute_paradigm_coherence(
     tokenizer: SubwordTokenizer, paradigms: list[Paradigm], tokenizer_kwargs: dict[str, Any]
 ) -> float:
     total_coherence: int = 0
     total_forms: int = 0
-    for paradigm in tqdm(paradigms, desc="Examining Paradigms"):
+    for paradigm in tqdm(paradigms, desc="Examining Paradigms for Coherence"):
         forms: list[str] = list(paradigm.keys())
         tokenizations: list[list[int]] = [
             tokenizer.encode(form, **tokenizer_kwargs) for form in forms
@@ -171,5 +203,6 @@ CORPUS_METRIC_MAPPING: dict[str, CorpusMetric] = {
 }
 
 MORPHOLOGY_METRIC_MAPPING: dict[str, ParadigmMetric] = {
-    NamedMorphologyTokenizationMetric.PARADIGM_COHERENCE: compute_paradigm_coherence
+    NamedMorphologyTokenizationMetric.PARADIGM_ADHERENCE: compute_paradigm_adherence,
+    NamedMorphologyTokenizationMetric.PARADIGM_COHERENCE: compute_paradigm_coherence,
 }

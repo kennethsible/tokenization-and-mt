@@ -202,4 +202,14 @@ def load_unimorph_inflections(inflection_filepath: Path) -> InflectionMap:
             if tagged_segmentation not in inflections[base] and segmentation != "-":
                 inflections[base].append(tagged_segmentation)
 
+    # Some headwords have no available segmentations.
+    # The two loops below filter out those segmentations.
+    empty_headwords: list[str] = []
+    for headword, tagged_segmentations in inflections.items():
+        if len(tagged_segmentations) == 0:
+            empty_headwords.append(headword)
+
+    for headword in empty_headwords:
+        del inflections[headword]
+
     return inflections
