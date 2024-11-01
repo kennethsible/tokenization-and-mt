@@ -1,8 +1,8 @@
 from pathlib import Path
-from typing import Any, Type
+from typing import Any
 
 from tensor2tensor.data_generators.text_encoder import SubwordTextEncoder
-from transformers import BertTokenizer, CanineTokenizer, PreTrainedTokenizer, RobertaTokenizer
+from transformers import AutoTokenizer, CanineTokenizer, PreTrainedTokenizer
 
 from .constants import (
     DEFAULT_TOKENIZER_FILEPATHS,
@@ -30,13 +30,11 @@ def get_tokenizers(
                 | NamedLanguageModel.PHILBERTA
                 | NamedLanguageModel.SPHILBERTA
                 | NamedLanguageModel.MULTILINGUAL_BERT
+                | NamedLanguageModel.XLM_ROBERTA
+                | NamedLanguageModel.ICEBERT
+                | NamedLanguageModel.IS_ROBERTA
             ):
-                tokenizer_class: Type[PreTrainedTokenizer] = (
-                    BertTokenizer
-                    if language_model == NamedLanguageModel.MULTILINGUAL_BERT
-                    else RobertaTokenizer
-                )
-                subword_tokenizer: PreTrainedTokenizer = tokenizer_class.from_pretrained(
+                subword_tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(
                     tokenizer_filepath
                 )
                 tokenizer_kwargs: dict[str, Any] = {"add_special_tokens": False}

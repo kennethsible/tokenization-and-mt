@@ -32,17 +32,21 @@ ParadigmMetric: TypeAlias = Callable[[SubwordTokenizer, list[Paradigm], dict[str
 
 class MorphologyDataSource(StrEnum):
     UNIMORPH: str = "unimorph"
+    UNIMORPH_CORRECTED: str = "unimorph-corrected"
     WORD_FORMATION_LEXICON: str = "wfl"
 
 
 class NamedLanguageModel(StrEnum):
     CANINE_C: str = "canine-c"
     CANINE_S: str = "canine-s"
+    ICEBERT: str = "icebert"
+    IS_ROBERTA: str = "is-roberta"
     LATIN_BERT: str = "latin-bert"
     LABERTA: str = "laberta"
     MULTILINGUAL_BERT: str = "mbert"
     PHILBERTA: str = "philberta"
     SPHILBERTA: str = "sphilberta"
+    XLM_ROBERTA: str = "xlm-roberta"
 
 
 class NamedCorpusTokenizationMetric(StrEnum):
@@ -57,10 +61,17 @@ class NamedMorphologyTokenizationMetric(StrEnum):
 
 
 class TokenizationLanguage(StrEnum):
+    ICELANDIC: str = "icelandic"
     LATIN: str = "latin"
 
 
 MODELS_BY_LANGUAGE: dict[str, set[str]] = {
+    TokenizationLanguage.ICELANDIC: {
+        NamedLanguageModel.ICEBERT,
+        NamedLanguageModel.IS_ROBERTA,
+        NamedLanguageModel.MULTILINGUAL_BERT,
+        NamedLanguageModel.XLM_ROBERTA,
+    },
     TokenizationLanguage.LATIN: {
         NamedLanguageModel.CANINE_C,
         NamedLanguageModel.CANINE_S,
@@ -69,12 +80,15 @@ MODELS_BY_LANGUAGE: dict[str, set[str]] = {
         NamedLanguageModel.MULTILINGUAL_BERT,
         NamedLanguageModel.PHILBERTA,
         NamedLanguageModel.SPHILBERTA,
-    }
+        NamedLanguageModel.XLM_ROBERTA,
+    },
 }
 
 DEFAULT_TOKENIZER_FILEPATHS: dict[NamedLanguageModel, Path] = {
     NamedLanguageModel.CANINE_C: Path("resources/multi/canine-c"),
     NamedLanguageModel.CANINE_S: Path("resources/multi/canine-s"),
+    NamedLanguageModel.ICEBERT: Path("resources/isl/icebert"),
+    NamedLanguageModel.IS_ROBERTA: Path("resources/isl/is-roberta"),
     NamedLanguageModel.LATIN_BERT: Path(
         "resources/lat/latin-bert/subword_tokenizer_latin/latin.subword.encoder"
     ),
@@ -82,4 +96,5 @@ DEFAULT_TOKENIZER_FILEPATHS: dict[NamedLanguageModel, Path] = {
     NamedLanguageModel.LABERTA: Path("resources/lat/laberta"),
     NamedLanguageModel.PHILBERTA: Path("resources/multi/philberta"),
     NamedLanguageModel.SPHILBERTA: Path("resources/multi/sphilberta"),
+    NamedLanguageModel.XLM_ROBERTA: Path("resources/multi/xlm-roberta-base"),
 }

@@ -20,6 +20,9 @@ DEFAULT_DERIVATION_FILEPATHS: dict[tuple[TokenizationLanguage, MorphologyDataSou
     (TokenizationLanguage.LATIN, MorphologyDataSource.UNIMORPH): Path(
         "data/unimorph/lat/lat.derivations"
     ),
+    (TokenizationLanguage.LATIN, MorphologyDataSource.UNIMORPH_CORRECTED): Path(
+        "data/unimorph/lat-corrected/lat.derivations"
+    ),
     (TokenizationLanguage.LATIN, MorphologyDataSource.WORD_FORMATION_LEXICON): Path(
         "data/word-formation-lexicon/wfl_derivations.tsv"
     ),
@@ -28,7 +31,10 @@ DEFAULT_DERIVATION_FILEPATHS: dict[tuple[TokenizationLanguage, MorphologyDataSou
 DEFAULT_INFLECTION_FILEPATHS: dict[tuple[TokenizationLanguage, MorphologyDataSource], Path] = {
     (TokenizationLanguage.LATIN, MorphologyDataSource.UNIMORPH): Path(
         "data/unimorph/lat/lat.segmentations"
-    )
+    ),
+    (TokenizationLanguage.LATIN, MorphologyDataSource.UNIMORPH_CORRECTED): Path(
+        "data/unimorph/lat-corrected/lat.segmentations"
+    ),
 }
 
 
@@ -41,7 +47,7 @@ def construct_paradigms(
         case TokenizationLanguage.LATIN:
             paradigm_builder: ParadigmConstructor = construct_latin_paradigms
             match derivation_source:
-                case MorphologyDataSource.UNIMORPH:
+                case MorphologyDataSource.UNIMORPH | MorphologyDataSource.UNIMORPH_CORRECTED:
                     derivation_function: Callable = load_unimorph_derivations
                 case MorphologyDataSource.WORD_FORMATION_LEXICON:
                     derivation_function: Callable = load_wfl_derivations
@@ -95,7 +101,7 @@ def construct_latin_paradigms(
 
     # We combine derivation and inflection information into paradigms.
     for headword, tagged_segmentations in tqdm(
-        inflections.items(), desc="Loading Paradigms (Latin, Unimorph)"
+        inflections.items(), desc="Loading Paradigms (Latin)"
     ):
         # First, across the paradigm, we take inflections into account.
         derivational_affix_count: int = 0
