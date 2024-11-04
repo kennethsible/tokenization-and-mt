@@ -19,8 +19,8 @@ from .constants import (
 )
 from .constructors import (
     construct_paradigms,
-    load_unimorph_inflections,
-    load_unimorph_derivations,
+    load_unimorph_latin_derivations,
+    load_unimorph_latin_inflections,
     load_wfl_derivations,
 )
 from .helpers import collect_tokenizer_filepaths, get_tokenizers, retrieve_default_filepath
@@ -57,17 +57,17 @@ DEFAULT_INFLECTION_FILEPATHS: dict[tuple[TokenizationLanguage, MorphologyDataSou
 
 
 DEFAULT_DERIVATION_FUNCTIONS: dict[tuple[TokenizationLanguage, MorphologyDataSource], Callable] = {
-    (TokenizationLanguage.LATIN, MorphologyDataSource.UNIMORPH): load_unimorph_derivations,
+    (TokenizationLanguage.LATIN, MorphologyDataSource.UNIMORPH): load_unimorph_latin_derivations,
     (
         TokenizationLanguage.LATIN,
         MorphologyDataSource.UNIMORPH_CORRECTED,
-    ): load_unimorph_derivations,
+    ): load_unimorph_latin_derivations,
     (TokenizationLanguage.LATIN, MorphologyDataSource.WORD_FORMATION_LEXICON): load_wfl_derivations,
 }
 
 
 DEFAULT_INFLECTION_FUNCTIONS: dict[tuple[TokenizationLanguage, MorphologyDataSource], Callable] = {
-    (TokenizationLanguage.LATIN, MorphologyDataSource.UNIMORPH): load_unimorph_inflections
+    (TokenizationLanguage.LATIN, MorphologyDataSource.UNIMORPH): load_unimorph_latin_inflections
 }
 
 

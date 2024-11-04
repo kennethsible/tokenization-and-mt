@@ -1,6 +1,6 @@
 from itertools import product
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Optional
 
 from cltk.alphabet.lat import remove_accents, remove_macrons
 from tqdm import tqdm
@@ -9,13 +9,11 @@ from .constants import (
     DerivationMap,
     InflectionMap,
     MorphemeTable,
-    MorphologyDataSource,
     Paradigm,
-    TokenizationLanguage,
 )
 
 
-def load_unimorph_derivations(derivation_filepath: Path) -> DerivationMap:
+def load_unimorph_latin_derivations(derivation_filepath: Path) -> DerivationMap:
     derivations: DerivationMap = {}
     with derivation_filepath.open(encoding="utf-8", mode="r") as derivations_file:
         for line in tqdm(derivations_file, desc="Loading Derivations (Latin, Unimorph)"):
@@ -78,10 +76,10 @@ def load_wfl_derivations(derivation_filepath: Path) -> DerivationMap:
     return derivations
 
 
-def load_unimorph_inflections(inflection_filepath: Path) -> InflectionMap:
+def load_unimorph_latin_inflections(inflection_filepath: Path) -> InflectionMap:
     inflections: InflectionMap = {}
     with inflection_filepath.open(encoding="utf-8", mode="r") as inflections_file:
-        for line in tqdm(inflections_file, desc="Loading Inflections (Unimorph)"):
+        for line in tqdm(inflections_file, desc="Loading Inflections (Latin, Unimorph)"):
             base, inflection, tags, segmentation = line.strip().split("\t")
             base, inflection, segmentation = (
                 remove_macrons(base),
@@ -139,8 +137,14 @@ def construct_paradigms(
         # Second, we take into account the number of morphemes in each inflection.
         paradigm: Paradigm = {}
         for tag, segmentation in tagged_segmentations:
+            if segmentation is not None:
+                inflectional_affix_count: Optional[int] = len(segmentation) - 1
+                stem_count: Optional[int] = 1
+            else:
+                inflectional_affix_count, stem_count = None, None
+
             paradigm["".join(segmentation)] = MorphemeTable(
-                derivational_affix_count, len(segmentation) - 1, 1
+                derivational_affix_count, inflectional_affix_count, stem_count
             )
         else:
             paradigms.append(paradigm)

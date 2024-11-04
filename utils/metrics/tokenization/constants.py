@@ -8,7 +8,7 @@ from tensor2tensor.data_generators.text_encoder import SubwordTextEncoder
 from utils.data.corpora import BaseCorpusDataset
 
 DerivationMap: TypeAlias = dict[str, list[tuple[str, str]]]
-InflectionMap: TypeAlias = dict[str, list[tuple[str, list[str]]]]
+InflectionMap: TypeAlias = dict[str, list[tuple[str, Optional[list[str]]]]]
 
 
 class MorphemeTable(NamedTuple):
