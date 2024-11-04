@@ -1,6 +1,6 @@
 from enum import StrEnum
 from pathlib import Path
-from typing import Any, Callable, NamedTuple, TypeAlias, Union
+from typing import Any, Callable, NamedTuple, Optional, TypeAlias, Union
 
 from transformers import PreTrainedTokenizer
 from tensor2tensor.data_generators.text_encoder import SubwordTextEncoder
@@ -12,16 +12,22 @@ InflectionMap: TypeAlias = dict[str, list[tuple[str, list[str]]]]
 
 
 class MorphemeTable(NamedTuple):
-    derivations: int
-    inflections: int
-    stem: int = 1
+    derivations: Optional[int] = None
+    inflections: Optional[int] = None
+    stem: Optional[int] = None
 
     def count_morphemes(self):
-        return self.derivations + self.inflections + self.stem
+        morpheme_sources: list[int] = [self.derivations, self.inflections, self.stem]
+        if any([source is None for source in morpheme_sources]):
+            raise ValueError("Counting is not defined for an incomplete morpheme table.")
+
+        return sum(morpheme_sources)
 
 
 Paradigm: TypeAlias = dict[str, MorphemeTable]
-ParadigmConstructor: TypeAlias = Callable[[DerivationMap, InflectionMap], list[Paradigm]]
+ParadigmConstructor: TypeAlias = Callable[
+    [InflectionMap, ..., Optional[DerivationMap]], list[Paradigm]
+]
 SubwordTokenizer: TypeAlias = Union[PreTrainedTokenizer, SubwordTextEncoder]
 
 CorpusMetric: TypeAlias = Callable[

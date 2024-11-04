@@ -1,6 +1,6 @@
 from itertools import product
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Optional
 
 from cltk.alphabet.lat import remove_accents, remove_macrons
 from tqdm import tqdm
@@ -11,123 +11,8 @@ from .constants import (
     MorphemeTable,
     MorphologyDataSource,
     Paradigm,
-    ParadigmConstructor,
     TokenizationLanguage,
 )
-
-
-DEFAULT_DERIVATION_FILEPATHS: dict[tuple[TokenizationLanguage, MorphologyDataSource], Path] = {
-    (TokenizationLanguage.LATIN, MorphologyDataSource.UNIMORPH): Path(
-        "data/unimorph/lat/lat.derivations"
-    ),
-    (TokenizationLanguage.LATIN, MorphologyDataSource.UNIMORPH_CORRECTED): Path(
-        "data/unimorph/lat-corrected/lat.derivations"
-    ),
-    (TokenizationLanguage.LATIN, MorphologyDataSource.WORD_FORMATION_LEXICON): Path(
-        "data/word-formation-lexicon/wfl_derivations.tsv"
-    ),
-}
-
-DEFAULT_INFLECTION_FILEPATHS: dict[tuple[TokenizationLanguage, MorphologyDataSource], Path] = {
-    (TokenizationLanguage.LATIN, MorphologyDataSource.UNIMORPH): Path(
-        "data/unimorph/lat/lat.segmentations"
-    ),
-    (TokenizationLanguage.LATIN, MorphologyDataSource.UNIMORPH_CORRECTED): Path(
-        "data/unimorph/lat-corrected/lat.segmentations"
-    ),
-}
-
-
-def construct_paradigms(
-    derivation_source: MorphologyDataSource,
-    inflection_source: MorphologyDataSource,
-    language: TokenizationLanguage,
-) -> list[Paradigm]:
-    match language:
-        case TokenizationLanguage.LATIN:
-            paradigm_builder: ParadigmConstructor = construct_latin_paradigms
-            match derivation_source:
-                case MorphologyDataSource.UNIMORPH | MorphologyDataSource.UNIMORPH_CORRECTED:
-                    derivation_function: Callable = load_unimorph_derivations
-                case MorphologyDataSource.WORD_FORMATION_LEXICON:
-                    derivation_function: Callable = load_wfl_derivations
-                case _:
-                    raise ValueError(
-                        f"The derivation source <{derivation_source}> is not recognized."
-                    )
-
-            try:
-                derivation_location: Path = DEFAULT_DERIVATION_FILEPATHS[
-                    (language, derivation_source)
-                ]
-            except KeyError:
-                raise ValueError(
-                    f"The derivation source <{derivation_source}> is not recognized for "
-                    f"<{language}>."
-                )
-
-            derivations: DerivationMap = derivation_function(derivation_location)
-
-            match inflection_source:
-                case MorphologyDataSource.UNIMORPH:
-                    inflection_function: Callable = load_unimorph_inflections
-                case _:
-                    raise ValueError(
-                        f"The inflection source <{inflection_source}> is not recognized."
-                    )
-
-            try:
-                inflection_location: Path = DEFAULT_INFLECTION_FILEPATHS[
-                    (language, inflection_source)
-                ]
-            except KeyError:
-                raise ValueError(
-                    f"The derivation source <{derivation_source}> is not recognized for "
-                    f"<{language}>."
-                )
-
-            inflections: InflectionMap = inflection_function(inflection_location)
-        case _:
-            raise ValueError(f"Language {language} not currently supported.")
-
-    paradigms: list[Paradigm] = paradigm_builder(derivations, inflections)
-    return paradigms
-
-
-def construct_latin_paradigms(
-    derivations: DerivationMap, inflections: InflectionMap
-) -> list[Paradigm]:
-    paradigms: list[Paradigm] = []
-
-    # We combine derivation and inflection information into paradigms.
-    for headword, tagged_segmentations in tqdm(
-        inflections.items(), desc="Loading Paradigms (Latin)"
-    ):
-        # First, across the paradigm, we take inflections into account.
-        derivational_affix_count: int = 0
-        current_derivations: list[str] = [headword]
-        prior_derivations: list[str] = []
-        while len(current_derivations) > 0:
-            current_derivation = current_derivations.pop(0)
-            if current_derivation in prior_derivations:
-                continue  # It's possible to get in an infinite loop due to circular derivations.
-            elif derivations.get(current_derivation, None) is not None:
-                derivational_affix_count += len(derivations[current_derivation])
-                prior_derivations.append(current_derivation)
-                current_derivations.extend(
-                    {base for (base, affix) in derivations[current_derivation]}
-                )
-
-        # Second, we take into account the number of morphemes in each inflection.
-        paradigm: Paradigm = {}
-        for tag, segmentation in tagged_segmentations:
-            paradigm["".join(segmentation)] = MorphemeTable(
-                derivational_affix_count, len(segmentation) - 1
-            )
-        else:
-            paradigms.append(paradigm)
-
-    return paradigms
 
 
 def load_unimorph_derivations(derivation_filepath: Path) -> DerivationMap:
@@ -196,7 +81,7 @@ def load_wfl_derivations(derivation_filepath: Path) -> DerivationMap:
 def load_unimorph_inflections(inflection_filepath: Path) -> InflectionMap:
     inflections: InflectionMap = {}
     with inflection_filepath.open(encoding="utf-8", mode="r") as inflections_file:
-        for line in tqdm(inflections_file, desc="Loading Inflections (Latin, Unimorph)"):
+        for line in tqdm(inflections_file, desc="Loading Inflections (Unimorph)"):
             base, inflection, tags, segmentation = line.strip().split("\t")
             base, inflection, segmentation = (
                 remove_macrons(base),
@@ -222,3 +107,42 @@ def load_unimorph_inflections(inflection_filepath: Path) -> InflectionMap:
         del inflections[headword]
 
     return inflections
+
+
+def construct_paradigms(
+    inflections: InflectionMap, language: str, derivations: Optional[DerivationMap] = None
+) -> list[Paradigm]:
+    paradigms: list[Paradigm] = []
+
+    # We combine derivation and inflection information into paradigms.
+    for headword, tagged_segmentations in tqdm(
+        inflections.items(), desc=f"Loading Paradigms ({language.title()})"
+    ):
+        # First (if applicable), across the paradigm, we take derivations into account.
+        if derivations is not None:
+            derivational_affix_count: Optional[int] = 0
+            current_derivations: list[str] = [headword]
+            prior_derivations: list[str] = []
+            while len(current_derivations) > 0:
+                current_derivation = current_derivations.pop(0)
+                if current_derivation in prior_derivations:
+                    continue  # It's possible to get in an infinite loop due to circular derivations.
+                elif derivations.get(current_derivation, None) is not None:
+                    derivational_affix_count += len(derivations[current_derivation])
+                    prior_derivations.append(current_derivation)
+                    current_derivations.extend(
+                        {base for (base, affix) in derivations[current_derivation]}
+                    )
+        else:
+            derivational_affix_count = None
+
+        # Second, we take into account the number of morphemes in each inflection.
+        paradigm: Paradigm = {}
+        for tag, segmentation in tagged_segmentations:
+            paradigm["".join(segmentation)] = MorphemeTable(
+                derivational_affix_count, len(segmentation) - 1, 1
+            )
+        else:
+            paradigms.append(paradigm)
+
+    return paradigms
