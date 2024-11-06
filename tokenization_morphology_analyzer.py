@@ -1,17 +1,17 @@
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from utils.metrics.tokenization import (
     collect_tokenizer_filepaths,
     derive_paradigms,
-    get_tokenization_morphology_metric,
+    get_tokenization_aggregate_morphology_metric,
     get_tokenizers,
+    AggregateParadigmMetric,
     MorphologyDataSource,
     NamedLanguageModel,
     NamedMorphologyTokenizationMetric,
     Paradigm,
-    ParadigmMetric,
     SubwordTokenizer,
     TokenizationLanguage,
 )
@@ -45,7 +45,9 @@ if __name__ == "__main__":
 
     for i, (tokenizer, tokenizer_kwargs) in enumerate(full_tokenizers):
         for metric in args.metric:
-            metric_function: ParadigmMetric = get_tokenization_morphology_metric(metric)
+            metric_function: AggregateParadigmMetric = get_tokenization_aggregate_morphology_metric(
+                metric
+            )
             result: float = metric_function(tokenizer, paradigms, tokenizer_kwargs)
             print(
                 f"For the language <{args.language}> and the model <{args.language_models[i]}>, "

@@ -24,16 +24,28 @@ class MorphemeTable(NamedTuple):
         return sum(morpheme_sources)
 
 
-Paradigm: TypeAlias = dict[str, MorphemeTable]
+Paradigm: TypeAlias = dict[tuple[str, Any], MorphemeTable]
 ParadigmConstructor: TypeAlias = Callable[
     [InflectionMap, ..., Optional[DerivationMap]], list[Paradigm]
 ]
 SubwordTokenizer: TypeAlias = Union[PreTrainedTokenizer, SubwordTextEncoder]
 
+AggregateParadigmMetric: TypeAlias = Callable[
+    [SubwordTokenizer, list[Paradigm], dict[str, Any]], float
+]
 CorpusMetric: TypeAlias = Callable[
     [SubwordTokenizer, BaseCorpusDataset, dict[str, Any], ...], float
 ]
-ParadigmMetric: TypeAlias = Callable[[SubwordTokenizer, list[Paradigm], dict[str, Any]], float]
+IndividualParadigmMetric: TypeAlias = Callable[
+    [SubwordTokenizer, Paradigm, dict[str, Any]], tuple[..., float, dict[str, Any]]
+]
+IndividualParadigmWriter: TypeAlias = Callable[
+    [Path, SubwordTokenizer, list[Paradigm], list[dict[str, Any]]], None
+]
+
+CoherenceFunction: TypeAlias = Callable[
+    [SubwordTokenizer, Paradigm, dict[str, Any]], tuple[int, float, dict[str, Any]]
+]
 
 
 class MorphologyDataSource(StrEnum):

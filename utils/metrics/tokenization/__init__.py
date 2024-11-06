@@ -2,8 +2,11 @@ from pathlib import Path
 from typing import Callable, Optional
 
 from .constants import (
+    AggregateParadigmMetric,
     CorpusMetric,
     DerivationMap,
+    IndividualParadigmMetric,
+    IndividualParadigmWriter,
     InflectionMap,
     MorphologyDataSource,
     NamedCorpusTokenizationMetric,
@@ -11,7 +14,6 @@ from .constants import (
     NamedMorphologyTokenizationMetric,
     Paradigm,
     ParadigmConstructor,
-    ParadigmMetric,
     SubwordTokenizer,
     TokenizationLanguage,
     DEFAULT_TOKENIZER_FILEPATHS,
@@ -29,10 +31,11 @@ from .metrics import (
     compute_paradigm_coherence,
     compute_average_fertility,
     compute_average_tps,
+    AGGREGATE_MORPHOLOGY_METRIC_MAPPING,
     CORPUS_METRIC_MAPPING,
-    MORPHOLOGY_METRIC_MAPPING,
+    INDIVIDUAL_MORPHOLOGY_METRIC_MAPPING,
 )
-
+from .writers import INDIVIDUAL_MORPHOLOGY_WRITER_MAPPING
 
 DEFAULT_DERIVATION_FILEPATHS: dict[tuple[TokenizationLanguage, MorphologyDataSource], Path] = {
     (TokenizationLanguage.LATIN, MorphologyDataSource.UNIMORPH): Path(
@@ -123,10 +126,28 @@ def get_tokenization_corpus_metric(metric: str):
     return metric_function
 
 
-def get_tokenization_morphology_metric(metric: str):
+def get_tokenization_aggregate_morphology_metric(metric: str):
     try:
-        metric_function: ParadigmMetric = MORPHOLOGY_METRIC_MAPPING[metric]
+        metric_function: AggregateParadigmMetric = AGGREGATE_MORPHOLOGY_METRIC_MAPPING[metric]
     except KeyError:
         raise ValueError(f"The metric <{metric}> is not currently supported.")
 
     return metric_function
+
+
+def get_tokenization_individual_morphology_metric(metric: str):
+    try:
+        metric_function: IndividualParadigmMetric = INDIVIDUAL_MORPHOLOGY_METRIC_MAPPING[metric]
+    except KeyError:
+        raise ValueError(f"The metric <{metric}> is not currently supported.")
+
+    return metric_function
+
+
+def get_tokenization_morphology_writer(metric: str) -> IndividualParadigmWriter:
+    try:
+        output_function: IndividualParadigmWriter = INDIVIDUAL_MORPHOLOGY_WRITER_MAPPING[metric]
+    except KeyError:
+        raise ValueError(f"The metric <{metric}> is not currently supported.")
+
+    return output_function

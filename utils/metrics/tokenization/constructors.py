@@ -19,9 +19,9 @@ def load_unimorph_latin_derivations(derivation_filepath: Path) -> DerivationMap:
         for line in tqdm(derivations_file, desc="Loading Derivations (Latin, Unimorph)"):
             base, derivation, _, affix = line.strip().split("\t")
             base, derivation, affix = (
-                remove_macrons(base),
-                remove_macrons(derivation),
-                remove_macrons(affix),
+                remove_accents(remove_macrons(base)),
+                remove_accents(remove_macrons(derivation)),
+                remove_accents(remove_macrons(affix)),
             )
 
             if derivation not in derivations:
@@ -40,9 +40,9 @@ def load_wfl_derivations(derivation_filepath: Path) -> DerivationMap:
         for line in tqdm(derivations_file, desc="Loading Derivations (Latin, WFL)"):
             base, derivation, _, affix, *_ = line.strip().split("\t")
             base, derivation, affix = (
-                remove_macrons(remove_accents(base)),
-                remove_macrons(remove_accents(derivation)),
-                remove_macrons(remove_accents(affix)),
+                remove_accents(remove_macrons(base)),
+                remove_accents(remove_macrons(derivation)),
+                remove_accents(remove_macrons(affix)),
             )
 
             base_alternates: list[str] = []
@@ -82,9 +82,9 @@ def load_unimorph_latin_inflections(inflection_filepath: Path) -> InflectionMap:
         for line in tqdm(inflections_file, desc="Loading Inflections (Latin, Unimorph)"):
             base, inflection, tags, segmentation = line.strip().split("\t")
             base, inflection, segmentation = (
-                remove_macrons(base),
-                remove_macrons(inflection),
-                remove_macrons(segmentation),
+                remove_accents(remove_macrons(base)),
+                remove_accents(remove_macrons(inflection)),
+                remove_accents(remove_macrons(segmentation)),
             )
 
             tagged_segmentation: tuple[str, list[str]] = (tags, segmentation.split("|"))
@@ -143,7 +143,7 @@ def construct_paradigms(
             else:
                 inflectional_affix_count, stem_count = None, None
 
-            paradigm["".join(segmentation)] = MorphemeTable(
+            paradigm[("".join(segmentation), tag)] = MorphemeTable(
                 derivational_affix_count, inflectional_affix_count, stem_count
             )
         else:
