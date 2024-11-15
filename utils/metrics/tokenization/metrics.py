@@ -53,7 +53,7 @@ def compute_paradigm_adherence(
 
     individual_deviation: int = sum(form_deviations)
     individual_total: int = sum(expected_tokenization_lengths)
-    individual_adherence: float = max(0.0, 1 - (individual_deviation / individual_total))
+    individual_adherence: float = 1 - (individual_deviation / individual_total)
 
     computation_stages: dict[str, Any] = {
         "forms": forms,
