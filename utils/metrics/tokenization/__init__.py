@@ -31,7 +31,7 @@ from .tables import (
     DEFAULT_TOKENIZER_FILEPATHS,
     INDIVIDUAL_MORPHOLOGY_METRIC_MAPPING,
     INDIVIDUAL_MORPHOLOGY_WRITER_MAPPING,
-    MODELS_BY_LANGUAGE
+    MODELS_BY_LANGUAGE,
 )
 from .types import (
     AggregateParadigmMetric,
@@ -43,7 +43,6 @@ from .types import (
     Paradigm,
     ParadigmConstructor,
     SubwordTokenizer,
-
 )
 
 
@@ -57,10 +56,14 @@ def derive_paradigms(
     # Derivations are not required for all morphological metrics.
     if any(language in key for key in DEFAULT_DERIVATION_FUNCTIONS.keys()):
         try:
-            derivation_function: Callable = DEFAULT_DERIVATION_FUNCTIONS[(language, derivation_source)]
+            derivation_function: Callable = DEFAULT_DERIVATION_FUNCTIONS[
+                (language, derivation_source)
+            ]
             derivation_location: Path = DEFAULT_DERIVATION_FILEPATHS[(language, derivation_source)]
         except KeyError:
-            raise ValueError(f"The derivation source <{derivation_source}> is not known for <{language}>.")
+            raise ValueError(
+                f"The derivation source <{derivation_source}> is not known for <{language}>."
+            )
 
         derivations: Optional[DerivationMap] = derivation_function(derivation_location)
     else:
@@ -71,7 +74,9 @@ def derive_paradigms(
         inflection_function: Callable = DEFAULT_INFLECTION_FUNCTIONS[(language, inflection_source)]
         inflection_location: Path = DEFAULT_INFLECTION_FILEPATHS[(language, inflection_source)]
     except KeyError:
-        raise ValueError(f"The inflection source <{derivation_source}> is not known for <{language}>.")
+        raise ValueError(
+            f"The inflection source <{derivation_source}> is not known for <{language}>."
+        )
 
     inflections: InflectionMap = inflection_function(inflection_location)
 

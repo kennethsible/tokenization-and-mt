@@ -28,7 +28,7 @@ GREEK_NORMALIZATION_MAP: dict[str, str] = {
     "(": "",
     ")": "",
     "̄": "",
-    "̆": ""
+    "̆": "",
 }
 
 

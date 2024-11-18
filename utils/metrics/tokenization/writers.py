@@ -9,12 +9,9 @@ from .constants import (
     PARADIGM_ADHERENCE_SUBBULLET,
     PARADIGM_BULLET,
     PARADIGM_COHERENCE_HEADER,
-    PARADIGM_SUBHEADER
+    PARADIGM_SUBHEADER,
 )
-from .types import (
-    Paradigm,
-    SubwordTokenizer
-)
+from .types import Paradigm, SubwordTokenizer
 
 
 def write_paradigm_adherence_results(

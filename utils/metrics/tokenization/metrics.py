@@ -7,11 +7,7 @@ from multiset import FrozenMultiset
 
 from tqdm import tqdm
 
-from .types import (
-    CoherenceFunction,
-    Paradigm,
-    SubwordTokenizer
-)
+from .types import CoherenceFunction, Paradigm, SubwordTokenizer
 
 from utils.data.corpora import BaseCorpusDataset
 

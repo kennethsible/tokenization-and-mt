@@ -124,13 +124,13 @@ def load_unimorph_ancient_greek_inflections(inflection_filepath: Path) -> Inflec
 
                     # We remove parentheses (which indicate possible spelling variants
                     #   depending on the next word) as well as macrons and breves.
-                    for (key, value) in GREEK_NORMALIZATION_MAP.items():
+                    for key, value in GREEK_NORMALIZATION_MAP.items():
                         forms[i] = forms[i].replace(key, value)
 
                 base, inflection = forms
                 # We filter out articles for nominal forms.
                 if inflection.count(" ") > 0:
-                    inflection = inflection[inflection.index(" ") + 1:]
+                    inflection = inflection[inflection.index(" ") + 1 :]
 
                 # We don't have a segmentation, so we just supply the full inflected form here.
                 tagged_inflection: tuple[str, list[str]] = (tags, [inflection])

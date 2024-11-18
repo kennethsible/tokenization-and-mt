@@ -7,13 +7,13 @@ from .constants import (
     NamedLanguageModel,
     NamedCorpusTokenizationMetric,
     NamedMorphologyTokenizationMetric,
-    TokenizationLanguage
+    TokenizationLanguage,
 )
 from .constructors import (
     load_unimorph_ancient_greek_inflections,
     load_unimorph_latin_derivations,
     load_unimorph_latin_inflections,
-    load_wfl_derivations
+    load_wfl_derivations,
 )
 from .metrics import (
     compute_average_fertility,
@@ -22,25 +22,25 @@ from .metrics import (
     compute_aggregate_paradigm_coherence,
     compute_paradigm_adherence,
     compute_paradigm_coherence,
-    compute_da_paradigm_coherence
+    compute_da_paradigm_coherence,
 )
 from .types import (
     AggregateParadigmMetric,
     CorpusMetric,
     IndividualParadigmMetric,
-    IndividualParadigmWriter
+    IndividualParadigmWriter,
 )
 from .writers import (
     write_paradigm_adherence_results,
     write_paradigm_coherence_results,
-    write_da_paradigm_coherence_results
+    write_da_paradigm_coherence_results,
 )
 
 MODELS_BY_LANGUAGE: dict[str, set[str]] = {
     TokenizationLanguage.ANCIENT_GREEK: {
         NamedLanguageModel.ANCIENT_GREEK_BERT,
         NamedLanguageModel.GREBERTA,
-        NamedLanguageModel.PHILBERTA
+        NamedLanguageModel.PHILBERTA,
     },
     TokenizationLanguage.ICELANDIC: {
         NamedLanguageModel.ICEBERT,
@@ -89,8 +89,11 @@ DEFAULT_DERIVATION_FUNCTIONS: dict[tuple[TokenizationLanguage, MorphologyDataSou
 
 
 DEFAULT_INFLECTION_FUNCTIONS: dict[tuple[TokenizationLanguage, MorphologyDataSource], Callable] = {
-    (TokenizationLanguage.ANCIENT_GREEK, MorphologyDataSource.UNIMORPH): load_unimorph_ancient_greek_inflections,
-    (TokenizationLanguage.LATIN, MorphologyDataSource.UNIMORPH): load_unimorph_latin_inflections
+    (
+        TokenizationLanguage.ANCIENT_GREEK,
+        MorphologyDataSource.UNIMORPH,
+    ): load_unimorph_ancient_greek_inflections,
+    (TokenizationLanguage.LATIN, MorphologyDataSource.UNIMORPH): load_unimorph_latin_inflections,
 }
 
 
@@ -100,7 +103,7 @@ DEFAULT_DERIVATION_FILEPATHS: dict[tuple[TokenizationLanguage, MorphologyDataSou
     ),
     (TokenizationLanguage.LATIN, MorphologyDataSource.WORD_FORMATION_LEXICON): Path(
         "data/word-formation-lexicon/wfl_derivations.tsv"
-    )
+    ),
 }
 
 DEFAULT_INFLECTION_FILEPATHS: dict[tuple[TokenizationLanguage, MorphologyDataSource], Path] = {
@@ -109,7 +112,7 @@ DEFAULT_INFLECTION_FILEPATHS: dict[tuple[TokenizationLanguage, MorphologyDataSou
     ),
     (TokenizationLanguage.LATIN, MorphologyDataSource.UNIMORPH): Path(
         "data/unimorph/lat/lat.segmentations"
-    )
+    ),
 }
 
 CORPUS_METRIC_MAPPING: dict[str, CorpusMetric] = {
