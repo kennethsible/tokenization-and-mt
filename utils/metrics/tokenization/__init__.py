@@ -2,22 +2,11 @@ from pathlib import Path
 from typing import Callable, Optional
 
 from .constants import (
-    AggregateParadigmMetric,
-    CorpusMetric,
-    DerivationMap,
-    IndividualParadigmMetric,
-    IndividualParadigmWriter,
-    InflectionMap,
     MorphologyDataSource,
     NamedCorpusTokenizationMetric,
     NamedLanguageModel,
     NamedMorphologyTokenizationMetric,
-    Paradigm,
-    ParadigmConstructor,
-    SubwordTokenizer,
     TokenizationLanguage,
-    DEFAULT_TOKENIZER_FILEPATHS,
-    MODELS_BY_LANGUAGE,
 )
 from .constructors import (
     construct_paradigms,
@@ -31,47 +20,31 @@ from .metrics import (
     compute_paradigm_coherence,
     compute_average_fertility,
     compute_average_tps,
+)
+from .tables import (
     AGGREGATE_MORPHOLOGY_METRIC_MAPPING,
     CORPUS_METRIC_MAPPING,
+    DEFAULT_DERIVATION_FILEPATHS,
+    DEFAULT_DERIVATION_FUNCTIONS,
+    DEFAULT_INFLECTION_FILEPATHS,
+    DEFAULT_INFLECTION_FUNCTIONS,
+    DEFAULT_TOKENIZER_FILEPATHS,
     INDIVIDUAL_MORPHOLOGY_METRIC_MAPPING,
+    INDIVIDUAL_MORPHOLOGY_WRITER_MAPPING,
+    MODELS_BY_LANGUAGE
 )
-from .writers import INDIVIDUAL_MORPHOLOGY_WRITER_MAPPING
+from .types import (
+    AggregateParadigmMetric,
+    CorpusMetric,
+    DerivationMap,
+    IndividualParadigmMetric,
+    IndividualParadigmWriter,
+    InflectionMap,
+    Paradigm,
+    ParadigmConstructor,
+    SubwordTokenizer,
 
-DEFAULT_DERIVATION_FILEPATHS: dict[tuple[TokenizationLanguage, MorphologyDataSource], Path] = {
-    (TokenizationLanguage.LATIN, MorphologyDataSource.UNIMORPH): Path(
-        "data/unimorph/lat/lat.derivations"
-    ),
-    (TokenizationLanguage.LATIN, MorphologyDataSource.UNIMORPH_CORRECTED): Path(
-        "data/unimorph/lat-corrected/lat.derivations"
-    ),
-    (TokenizationLanguage.LATIN, MorphologyDataSource.WORD_FORMATION_LEXICON): Path(
-        "data/word-formation-lexicon/wfl_derivations.tsv"
-    ),
-}
-
-DEFAULT_INFLECTION_FILEPATHS: dict[tuple[TokenizationLanguage, MorphologyDataSource], Path] = {
-    (TokenizationLanguage.LATIN, MorphologyDataSource.UNIMORPH): Path(
-        "data/unimorph/lat/lat.segmentations"
-    ),
-    (TokenizationLanguage.LATIN, MorphologyDataSource.UNIMORPH_CORRECTED): Path(
-        "data/unimorph/lat-corrected/lat.segmentations"
-    ),
-}
-
-
-DEFAULT_DERIVATION_FUNCTIONS: dict[tuple[TokenizationLanguage, MorphologyDataSource], Callable] = {
-    (TokenizationLanguage.LATIN, MorphologyDataSource.UNIMORPH): load_unimorph_latin_derivations,
-    (
-        TokenizationLanguage.LATIN,
-        MorphologyDataSource.UNIMORPH_CORRECTED,
-    ): load_unimorph_latin_derivations,
-    (TokenizationLanguage.LATIN, MorphologyDataSource.WORD_FORMATION_LEXICON): load_wfl_derivations,
-}
-
-
-DEFAULT_INFLECTION_FUNCTIONS: dict[tuple[TokenizationLanguage, MorphologyDataSource], Callable] = {
-    (TokenizationLanguage.LATIN, MorphologyDataSource.UNIMORPH): load_unimorph_latin_inflections
-}
+)
 
 
 def derive_paradigms(
@@ -79,39 +52,28 @@ def derive_paradigms(
     inflection_source: MorphologyDataSource,
     derivation_source: Optional[MorphologyDataSource] = None,
 ) -> list[Paradigm]:
-    match language:
-        case TokenizationLanguage.LATIN:
-            paradigm_builder: ParadigmConstructor = construct_paradigms
+    paradigm_builder: ParadigmConstructor = construct_paradigms
 
-            try:
-                derivation_function: Callable = DEFAULT_DERIVATION_FUNCTIONS[
-                    (language, derivation_source)
-                ]
-                derivation_location: Path = DEFAULT_DERIVATION_FILEPATHS[
-                    (language, derivation_source)
-                ]
-            except KeyError:
-                raise ValueError(
-                    f"The derivation source <{derivation_source}> is not known for <{language}>."
-                )
+    # Derivations are not required for all morphological metrics.
+    if any(language in key for key in DEFAULT_DERIVATION_FUNCTIONS.keys()):
+        try:
+            derivation_function: Callable = DEFAULT_DERIVATION_FUNCTIONS[(language, derivation_source)]
+            derivation_location: Path = DEFAULT_DERIVATION_FILEPATHS[(language, derivation_source)]
+        except KeyError:
+            raise ValueError(f"The derivation source <{derivation_source}> is not known for <{language}>.")
 
-            derivations: DerivationMap = derivation_function(derivation_location)
+        derivations: Optional[DerivationMap] = derivation_function(derivation_location)
+    else:
+        derivations = None
 
-            try:
-                inflection_function: Callable = DEFAULT_INFLECTION_FUNCTIONS[
-                    (language, inflection_source)
-                ]
-                inflection_location: Path = DEFAULT_INFLECTION_FILEPATHS[
-                    (language, inflection_source)
-                ]
-            except KeyError:
-                raise ValueError(
-                    f"The inflection source <{derivation_source}> is not known for <{language}>."
-                )
+    # Inflections (or, more specifically, lemma-inflection mappings) are required for all morphological metrics.
+    try:
+        inflection_function: Callable = DEFAULT_INFLECTION_FUNCTIONS[(language, inflection_source)]
+        inflection_location: Path = DEFAULT_INFLECTION_FILEPATHS[(language, inflection_source)]
+    except KeyError:
+        raise ValueError(f"The inflection source <{derivation_source}> is not known for <{language}>.")
 
-            inflections: InflectionMap = inflection_function(inflection_location)
-        case _:
-            raise ValueError(f"Language {language} not currently supported.")
+    inflections: InflectionMap = inflection_function(inflection_location)
 
     paradigms: list[Paradigm] = paradigm_builder(inflections, language, derivations)
     return paradigms

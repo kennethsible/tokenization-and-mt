@@ -4,11 +4,9 @@ from typing import Any
 from tensor2tensor.data_generators.text_encoder import SubwordTextEncoder
 from transformers import AutoTokenizer, CanineTokenizer, PreTrainedTokenizer
 
-from .constants import (
-    DEFAULT_TOKENIZER_FILEPATHS,
-    NamedLanguageModel,
-    SubwordTokenizer,
-)
+from .constants import NamedLanguageModel
+from .tables import DEFAULT_TOKENIZER_FILEPATHS
+from .types import SubwordTokenizer
 
 
 def get_tokenizers(
@@ -33,6 +31,8 @@ def get_tokenizers(
                 | NamedLanguageModel.XLM_ROBERTA
                 | NamedLanguageModel.ICEBERT
                 | NamedLanguageModel.IS_ROBERTA
+                | NamedLanguageModel.ANCIENT_GREEK_BERT
+                | NamedLanguageModel.GREBERTA
             ):
                 subword_tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(
                     tokenizer_filepath

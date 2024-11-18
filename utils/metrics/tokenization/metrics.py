@@ -7,16 +7,12 @@ from multiset import FrozenMultiset
 
 from tqdm import tqdm
 
-from .constants import (
-    AggregateParadigmMetric,
+from .types import (
     CoherenceFunction,
-    CorpusMetric,
-    IndividualParadigmMetric,
-    NamedCorpusTokenizationMetric,
-    NamedMorphologyTokenizationMetric,
     Paradigm,
-    SubwordTokenizer,
+    SubwordTokenizer
 )
+
 from utils.data.corpora import BaseCorpusDataset
 
 
@@ -302,25 +298,3 @@ def get_mapped_sentence_fertilities(
         tokenizer, tokenizer_kwargs, sentence_text
     )
     return sentence_id, sentence_fertilities
-
-
-CORPUS_METRIC_MAPPING: dict[str, CorpusMetric] = {
-    NamedCorpusTokenizationMetric.AVERAGE_TOKENS_PER_SENTENCE: compute_average_tps,
-    NamedCorpusTokenizationMetric.FERTILITY: compute_average_fertility,
-}
-
-AGGREGATE_MORPHOLOGY_METRIC_MAPPING: dict[str, AggregateParadigmMetric] = {
-    NamedMorphologyTokenizationMetric.DERIVATIONALLY_AWARE_PARADIGM_COHERENCE: partial(
-        compute_aggregate_paradigm_coherence, coherence_function=compute_da_paradigm_coherence
-    ),
-    NamedMorphologyTokenizationMetric.PARADIGM_ADHERENCE: compute_aggregate_paradigm_adherence,
-    NamedMorphologyTokenizationMetric.PARADIGM_COHERENCE: partial(
-        compute_aggregate_paradigm_coherence, coherence_function=compute_paradigm_coherence
-    ),
-}
-
-INDIVIDUAL_MORPHOLOGY_METRIC_MAPPING: dict[str, IndividualParadigmMetric] = {
-    NamedMorphologyTokenizationMetric.DERIVATIONALLY_AWARE_PARADIGM_COHERENCE: compute_da_paradigm_coherence,
-    NamedMorphologyTokenizationMetric.PARADIGM_ADHERENCE: compute_paradigm_adherence,
-    NamedMorphologyTokenizationMetric.PARADIGM_COHERENCE: compute_paradigm_coherence,
-}

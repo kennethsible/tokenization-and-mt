@@ -1,51 +1,35 @@
 from enum import StrEnum
-from pathlib import Path
-from typing import Any, Callable, NamedTuple, Optional, TypeAlias, Union
-
-from transformers import PreTrainedTokenizer
-from tensor2tensor.data_generators.text_encoder import SubwordTextEncoder
-
-from utils.data.corpora import BaseCorpusDataset
-
-DerivationMap: TypeAlias = dict[str, list[tuple[str, str]]]
-InflectionMap: TypeAlias = dict[str, list[tuple[str, Optional[list[str]]]]]
 
 
-class MorphemeTable(NamedTuple):
-    derivations: Optional[int] = None
-    inflections: Optional[int] = None
-    stem: Optional[int] = None
+# Writing Format Constants:
+DA_PARADIGM_COHERENCE_HEADER: str = "Derivationally-Aware Paradigm Coherence: Samples ({0})\n\n"
+PARADIGM_ADHERENCE_HEADER: str = "Paradigm Adherence: Samples ({0})\n\n"
+PARADIGM_COHERENCE_HEADER: str = "Paradigm Coherence: Samples ({0})\n\n"
 
-    def count_morphemes(self):
-        morpheme_sources: list[int] = [self.derivations, self.inflections, self.stem]
-        if any([source is None for source in morpheme_sources]):
-            raise ValueError("Counting is not defined for an incomplete morpheme table.")
+PARADIGM_SUBHEADER: str = "Paradigm {0} (Score: {1}):"
+PARADIGM_BULLET: str = "\n\t* {0}: ({1})"
 
-        return sum(morpheme_sources)
+PARADIGM_ADHERENCE_SUBBULLET: str = "\n\t\t- {0} (Expected) vs. {1} (Actual); Deviation: {2}"
 
 
-Paradigm: TypeAlias = dict[tuple[str, Any], MorphemeTable]
-ParadigmConstructor: TypeAlias = Callable[
-    [InflectionMap, ..., Optional[DerivationMap]], list[Paradigm]
-]
-SubwordTokenizer: TypeAlias = Union[PreTrainedTokenizer, SubwordTextEncoder]
-
-AggregateParadigmMetric: TypeAlias = Callable[
-    [SubwordTokenizer, list[Paradigm], dict[str, Any]], float
-]
-CorpusMetric: TypeAlias = Callable[
-    [SubwordTokenizer, BaseCorpusDataset, dict[str, Any], ...], float
-]
-IndividualParadigmMetric: TypeAlias = Callable[
-    [SubwordTokenizer, Paradigm, dict[str, Any]], tuple[..., float, dict[str, Any]]
-]
-IndividualParadigmWriter: TypeAlias = Callable[
-    [Path, SubwordTokenizer, list[Paradigm], list[dict[str, Any]]], None
-]
-
-CoherenceFunction: TypeAlias = Callable[
-    [SubwordTokenizer, Paradigm, dict[str, Any]], tuple[int, float, dict[str, Any]]
-]
+GREEK_NORMALIZATION_MAP: dict[str, str] = {
+    "ᾱ": "α",
+    "ᾰ": "α",
+    "Ᾱ": "Α",
+    "Ᾰ": "Α",
+    "ῑ": "ι",
+    "ῐ": "ι",
+    "Ῑ": "Ι",
+    "Ῐ": "Ι",
+    "ῡ": "υ",
+    "ῠ": "υ",
+    "Ῡ": "Υ",
+    "Ῠ": "Υ",
+    "(": "",
+    ")": "",
+    "̄": "",
+    "̆": ""
+}
 
 
 class MorphologyDataSource(StrEnum):
@@ -55,8 +39,10 @@ class MorphologyDataSource(StrEnum):
 
 
 class NamedLanguageModel(StrEnum):
+    ANCIENT_GREEK_BERT: str = "ancient-greek-bert"
     CANINE_C: str = "canine-c"
     CANINE_S: str = "canine-s"
+    GREBERTA: str = "greberta"
     ICEBERT: str = "icebert"
     IS_ROBERTA: str = "is-roberta"
     LATIN_BERT: str = "latin-bert"
@@ -79,40 +65,6 @@ class NamedMorphologyTokenizationMetric(StrEnum):
 
 
 class TokenizationLanguage(StrEnum):
+    ANCIENT_GREEK: str = "ancient-greek"
     ICELANDIC: str = "icelandic"
     LATIN: str = "latin"
-
-
-MODELS_BY_LANGUAGE: dict[str, set[str]] = {
-    TokenizationLanguage.ICELANDIC: {
-        NamedLanguageModel.ICEBERT,
-        NamedLanguageModel.IS_ROBERTA,
-        NamedLanguageModel.MULTILINGUAL_BERT,
-        NamedLanguageModel.XLM_ROBERTA,
-    },
-    TokenizationLanguage.LATIN: {
-        NamedLanguageModel.CANINE_C,
-        NamedLanguageModel.CANINE_S,
-        NamedLanguageModel.LABERTA,
-        NamedLanguageModel.LATIN_BERT,
-        NamedLanguageModel.MULTILINGUAL_BERT,
-        NamedLanguageModel.PHILBERTA,
-        NamedLanguageModel.SPHILBERTA,
-        NamedLanguageModel.XLM_ROBERTA,
-    },
-}
-
-DEFAULT_TOKENIZER_FILEPATHS: dict[NamedLanguageModel, Path] = {
-    NamedLanguageModel.CANINE_C: Path("resources/multi/canine-c"),
-    NamedLanguageModel.CANINE_S: Path("resources/multi/canine-s"),
-    NamedLanguageModel.ICEBERT: Path("resources/isl/icebert"),
-    NamedLanguageModel.IS_ROBERTA: Path("resources/isl/is-roberta"),
-    NamedLanguageModel.LATIN_BERT: Path(
-        "resources/lat/latin-bert/subword_tokenizer_latin/latin.subword.encoder"
-    ),
-    NamedLanguageModel.MULTILINGUAL_BERT: Path("resources/multi/mbert"),
-    NamedLanguageModel.LABERTA: Path("resources/lat/laberta"),
-    NamedLanguageModel.PHILBERTA: Path("resources/multi/philberta"),
-    NamedLanguageModel.SPHILBERTA: Path("resources/multi/sphilberta"),
-    NamedLanguageModel.XLM_ROBERTA: Path("resources/multi/xlm-roberta-base"),
-}

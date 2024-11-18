@@ -5,7 +5,8 @@ from typing import Optional
 from cltk.alphabet.lat import remove_accents, remove_macrons
 from tqdm import tqdm
 
-from .constants import (
+from .constants import GREEK_NORMALIZATION_MAP
+from .types import (
     DerivationMap,
     InflectionMap,
     MorphemeTable,
@@ -96,6 +97,51 @@ def load_unimorph_latin_inflections(inflection_filepath: Path) -> InflectionMap:
 
     # Some headwords have no available segmentations.
     # The two loops below filter out those segmentations.
+    empty_headwords: list[str] = []
+    for headword, tagged_segmentations in inflections.items():
+        if len(tagged_segmentations) == 0:
+            empty_headwords.append(headword)
+
+    for headword in empty_headwords:
+        del inflections[headword]
+
+    return inflections
+
+
+def load_unimorph_ancient_greek_inflections(inflection_filepath: Path) -> InflectionMap:
+    inflections: InflectionMap = {}
+    with inflection_filepath.open(encoding="utf-8", mode="r") as inflections_file:
+        for line in tqdm(inflections_file, desc="Loading Inflections (Ancient Greek, Unimorph)"):
+            if line.strip() == "":
+                continue
+            else:
+                base, inflection, tags = line.strip().split("\t")
+                forms: list[str] = [base, inflection]
+                for i in range(0, len(forms)):
+                    # If there are two spelling variants, we take the first.
+                    if "/" in forms[i]:
+                        forms[i] = forms[i].split("/")[0].strip()
+
+                    # We remove parentheses (which indicate possible spelling variants
+                    #   depending on the next word) as well as macrons and breves.
+                    for (key, value) in GREEK_NORMALIZATION_MAP.items():
+                        forms[i] = forms[i].replace(key, value)
+
+                base, inflection = forms
+                # We filter out articles for nominal forms.
+                if inflection.count(" ") > 0:
+                    inflection = inflection[inflection.index(" ") + 1:]
+
+                # We don't have a segmentation, so we just supply the full inflected form here.
+                tagged_inflection: tuple[str, list[str]] = (tags, [inflection])
+                if base not in inflections:
+                    inflections[base] = []
+
+                if tagged_inflection not in inflections[base]:
+                    inflections[base].append(tagged_inflection)
+
+    # Some headwords have no available inflections.
+    # The two loops below filter out those inflections.
     empty_headwords: list[str] = []
     for headword, tagged_segmentations in inflections.items():
         if len(tagged_segmentations) == 0:

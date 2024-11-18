@@ -4,20 +4,17 @@ from typing import Any
 from tqdm import tqdm
 
 from .constants import (
-    IndividualParadigmWriter,
-    NamedMorphologyTokenizationMetric,
-    Paradigm,
-    SubwordTokenizer,
+    DA_PARADIGM_COHERENCE_HEADER,
+    PARADIGM_ADHERENCE_HEADER,
+    PARADIGM_ADHERENCE_SUBBULLET,
+    PARADIGM_BULLET,
+    PARADIGM_COHERENCE_HEADER,
+    PARADIGM_SUBHEADER
 )
-
-DA_PARADIGM_COHERENCE_HEADER: str = "Derivationally-Aware Paradigm Coherence: Samples ({0})\n\n"
-PARADIGM_ADHERENCE_HEADER: str = "Paradigm Adherence: Samples ({0})\n\n"
-PARADIGM_COHERENCE_HEADER: str = "Paradigm Coherence: Samples ({0})\n\n"
-
-PARADIGM_SUBHEADER: str = "Paradigm {0} (Score: {1}):"
-PARADIGM_BULLET: str = "\n\t* {0}: ({1})"
-
-PARADIGM_ADHERENCE_SUBBULLET: str = "\n\t\t- {0} (Expected) vs. {1} (Actual); Deviation: {2}"
+from .types import (
+    Paradigm,
+    SubwordTokenizer
+)
 
 
 def write_paradigm_adherence_results(
@@ -123,10 +120,3 @@ def write_da_paradigm_coherence_results(
                 output_text += "\n\n"
         else:
             output_file.write(output_text)
-
-
-INDIVIDUAL_MORPHOLOGY_WRITER_MAPPING: dict[str, IndividualParadigmWriter] = {
-    NamedMorphologyTokenizationMetric.DERIVATIONALLY_AWARE_PARADIGM_COHERENCE: write_da_paradigm_coherence_results,
-    NamedMorphologyTokenizationMetric.PARADIGM_ADHERENCE: write_paradigm_adherence_results,
-    NamedMorphologyTokenizationMetric.PARADIGM_COHERENCE: write_paradigm_coherence_results,
-}
