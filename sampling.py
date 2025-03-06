@@ -54,17 +54,19 @@ def epsilon_sampling(probabilities, epsilon):
     next_token = torch.multinomial(probabilities[allowed_indices], num_samples=1)
     return allowed_indices[next_token].item()
 
-def eta_sampling(probabilities, entropy, epsilon):
+def eta_sampling(probabilities, epsilon):
     """
     Args:
         probabilities (torch.Tensor): Probability distribution over vocabulary.
-        entropy (float): Entropy of the probability distribution.
         epsilon (float): Base probability threshold.
 
     Returns:
         int: The sampled token index.
     """
-    eta = min(epsilon, (epsilon ** 0.5) * torch.exp(-entropy))  # Compute η threshold
+    probabilities = probabilities.clamp(min=1e-9)  # Avoid log(0) issues
+    entropy = -torch.sum(probabilities * torch.log(probabilities))
+    
+    eta = min(epsilon, (epsilon ** 0.5) * torch.exp(-entropy))
     allowed_indices = (probabilities > eta).nonzero(as_tuple=True)[0]
     
     if len(allowed_indices) == 0:
