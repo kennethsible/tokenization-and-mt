@@ -1,0 +1,59 @@
+[project]
+name = "translation"
+version = "0.1.0"
+authors = [{ name = "Ken Sible", email = "ksible@nd.edu" }]
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.4.0",
+    "sacremoses>=0.1.1",
+    "subword-nmt>=0.3.8",
+    "sentencepiece>=0.2.0",
+    "spacy~=3.8.4",
+    "tqdm>=4.67.1",
+]
+
+[project.scripts]
+translate = "translation.translate:main"
+
+[tool.poetry]
+requires-poetry = ">=2.0"
+packages = [{ include = "translation" }]
+
+[[tool.poetry.source]]
+name = "pytorch-cuda"
+url = "https://download.pytorch.org/whl/cu124"
+priority = "supplemental"
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.13"
+torch = { source = "pytorch-cuda" }
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.4"
+black = "^25.1.0"
+isort = "^6.0.0"
+ruff = "^0.9.6"
+mypy = "^1.15.0"
+
+[tool.poetry.group.metrics.dependencies]
+sacrebleu = "^2.5.1"
+unbabel-comet = "^2.2.4"
+bert-score = "^0.3.13"
+
+[tool.black]
+skip-string-normalization = true
+line-length = 100
+
+[tool.isort]
+profile = "black"
+
+[tool.ruff]
+extend-select = ["I"]
+line-length = 100
+
+[tool.mypy]
+ignore_missing_imports = true
+
+[build-system]
+requires = ["poetry-core>=2.0"]
+build-backend = "poetry.core.masonry.api"
