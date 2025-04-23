@@ -1,18 +1,18 @@
-embed_dim           = 512   # dimensions of embedding sublayers
-ff_dim              = 2048  # dimensions of feed-forward sublayers
-num_heads           = 8     # number of parallel attention heads
-dropout             = 0.1   # dropout for emb/ff/attn sublayers
-num_layers          = 6     # number of encoder/decoder layers
-max_epochs          = 250   # maximum number of epochs, halt training
-lr                  = 3e-4  # learning rate (step size of the optimizer)
-patience            = 3     # number of epochs tolerated w/o improvement
-decay_factor        = 0.8   # if patience reached, lr *= decay_factor
-min_lr              = 5e-5  # minimum learning rate, halt training
-max_patience        = 20    # maximuim patience for early stopping
-label_smoothing     = 0.1   # label smoothing (regularization technique)
-clip_grad           = 1.0   # maximum allowed value of gradients
-batch_size          = 4096  # number of tokens per batch (source/target)
-max_length          = 256   # maximum sentence length (during training)
-beam_size           = 4     # size of decoding beam (during inference)
-threshold           = 10    # frequency threshold, append definitions
-max_append          = 10    # maximum number of definitions/headword
+embed_dim = 512       # dimensions of embedding sublayers
+ff_dim = 2048         # dimensions of feed-forward sublayers
+num_heads = 8         # number of parallel attention heads
+dropout = 0.1         # dropout for emb/ff/attn sublayers
+num_layers = 6        # number of encoder/decoder layers
+max_epochs = 250      # maximum number of epochs, halt training
+lr = 3e-4             # learning rate (step size of the optimizer)
+patience = 3          # number of epochs tolerated w/o improvement
+decay_factor = 0.8    # if patience reached, lr *= decay_factor
+min_lr = 5e-5         # minimum learning rate, halt training
+max_patience = 20     # maximuim patience for early stopping
+label_smoothing = 0.1 # label smoothing (regularization technique)
+clip_grad = 1.0       # maximum allowed value of gradients
+batch_size = 4096     # number of tokens per batch (source/target)
+max_length = 256      # maximum sentence length (during training)
+beam_size = 5         # size of decoding beam (during inference)
+threshold = 10        # frequency threshold, append definitions
+max_append = 10       # maximum number of definitions/headword

@@ -26,16 +26,6 @@ class Embedding(nn.Module):
         return self.scale * nn.functional.normalize(self.weight[x], dim=-1)
 
 
-class DictionaryEncoding(nn.Module):
-    def __init__(self, embed_dim: int, max_length: int = 5000):
-        super(DictionaryEncoding, self).__init__()
-        self.weight = nn.Parameter(torch.empty(max_length, embed_dim))
-        nn.init.normal_(self.weight, std=0.01)
-
-    def forward(self, x: Tensor) -> Tensor:
-        return x + self.weight[: x.size(0)]
-
-
 class PositionalEncoding(nn.Module):
     enc: Tensor
 
@@ -98,18 +88,11 @@ class MultiHeadAttention(nn.Module):
         self.num_heads = num_heads
 
     def attention(
-        self,
-        query: Tensor,
-        key: Tensor,
-        value: Tensor,
-        mask: Tensor | None = None,
-        dict_mask: Tensor | None = None,
+        self, query: Tensor, key: Tensor, value: Tensor, mask: Tensor | None = None
     ) -> Tensor:
         scores = query @ key.transpose(-2, -1) / math.sqrt(self.head_dim)
         if mask is not None:
             scores.masked_fill_(mask.unsqueeze(1) == 0, -torch.inf)
-        if dict_mask is not None:
-            scores -= torch.nan_to_num(dict_mask.transpose(0, 1))
         return self.dropout(scores.softmax(dim=-1)) @ value
 
     def _reshape_from(self, x: Tensor) -> Tensor:
@@ -119,18 +102,11 @@ class MultiHeadAttention(nn.Module):
         return x.reshape(*x.size()[:2], -1)
 
     def forward(
-        self,
-        query: Tensor,
-        key: Tensor,
-        value: Tensor,
-        mask: Tensor | None = None,
-        dict_mask: Tensor | None = None,
+        self, query: Tensor, key: Tensor, value: Tensor, mask: Tensor | None = None
     ) -> Tensor:
         query, key, value = [
             self._reshape_from(linear(x)).transpose(1, 2)
             for linear, x in zip(self.linears, (query, key, value))
         ]
-        if dict_mask is not None:
-            dict_mask = torch.einsum('ij,j...->i...', torch.exp(self.weights), dict_mask)
-        outputs = self.attention(query, key, value, mask, dict_mask)
+        outputs = self.attention(query, key, value, mask)
         return self.linears[-1](self._reshape_to(outputs.transpose(1, 2)))

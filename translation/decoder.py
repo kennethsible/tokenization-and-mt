@@ -18,24 +18,21 @@ def greedy_search(manager: 'Manager', src_encs: Tensor, max_length: int = 512) -
     path = torch.full((1, max_length), vocab.BOS, device=device)
 
     for i in range(1, max_length):
-        tgt_encs = model.decode(src_encs.unsqueeze(0), path[:, :i], tgt_mask=tgt_mask[:, :i, :i])
-        logits = model.out_embed(tgt_encs[:, -1], inverse=True)
+        tgt_encs = model.decode(src_encs, path[:, :i], tgt_mask=tgt_mask[:, :i, :i])
+        logits = model.out_embed(tgt_encs[:, -1], inverse=True)[:, : vocab.size()]
         path[0, i] = logits.log_softmax(dim=-1).argmax(dim=-1)
         if path[0, i] == vocab.EOS:
-            break
+            return path[0, : i + 1]
 
-    return path.squeeze(0)
+    return path[0]
 
 
 def beam_search(
-    manager: 'Manager',
-    src_encs: Tensor,
-    beam_size: int = 4,
-    beam_alpha: float = 0.6,
-    max_length: int = 512,
-) -> tuple[Tensor, Tensor]:
+    manager: 'Manager', src_encs: Tensor, beam_size: int = 5, max_length: int = 512
+) -> tuple[Tensor, Tensor, Tensor]:
     model, vocab, device = manager.model, manager.vocab, manager.device
     tgt_mask = triu_mask(max_length, device=device)
+    indices = torch.ones(beam_size, dtype=torch.int, device=device) * max_length
     active = torch.ones(beam_size, dtype=torch.bool, device=device)
     paths = torch.full((beam_size, max_length), vocab.BOS, device=device)
     probs = torch.zeros(beam_size, device=device)
@@ -50,10 +47,9 @@ def beam_search(
         if i == 1:
             scores = scores[0]
 
-        length_penalty = (5.0 + i + 1.0) ** beam_alpha / 6.0**beam_alpha
         topv, topi = torch.topk(scores.flatten(), beam_size)
         if beam_size < init_size:
-            active[~active] |= probs[~active] < topv.max() / length_penalty
+            active[~active] |= probs[~active] < topv.max() / i
             active_count = int(active.count_nonzero())
             if active_count > beam_size:
                 beam_size = active_count
@@ -65,8 +61,11 @@ def beam_search(
         probs[active] = topv
 
         terminated = paths[:, i] == vocab.EOS
-        probs[terminated] /= length_penalty
-        active &= ~terminated
+        indices[terminated] = i
+        probs[terminated] /= i
+        active = active & ~terminated
         beam_size = int(active.count_nonzero())
 
-    return paths, probs
+    best_path = probs.argmax()
+    trunc_path = int(indices[best_path]) + 1
+    return paths[best_path, :trunc_path], paths, probs

@@ -17,37 +17,25 @@ Logger = logging.Logger
 
 
 def train_epoch(
-    data: list[Batch],
-    manager: Manager,
-    criterion: Criterion,
-    optimizer: Optimizer | None = None,
-    scaler: Scaler | None = None,
+    batches: list[Batch], manager: Manager, criterion: Criterion, optimizer: Optimizer | None = None
 ) -> float:
     total_loss, num_tokens = 0.0, 0
-    for batch in tqdm(data):
+    for batch in tqdm(batches):
         src_nums, src_mask = batch.src_nums, batch.src_mask
         tgt_nums, tgt_mask = batch.tgt_nums, batch.tgt_mask
         batch_length = batch.length()
 
-        if manager.dpe_embed:
-            dict_mask, dict_data = None, batch._dict_data
-        else:
-            dict_mask, dict_data = batch.dict_mask, None
+        logits = manager.model(src_nums, tgt_nums, src_mask, tgt_mask)
+        loss = criterion(torch.flatten(logits[:, :-1], 0, 1), torch.flatten(tgt_nums[:, 1:]))
 
-        with torch.cuda.amp.autocast():
-            logits = manager.model(src_nums, tgt_nums, src_mask, tgt_mask, dict_mask, dict_data)
-            loss = criterion(torch.flatten(logits[:, :-1], 0, 1), torch.flatten(tgt_nums[:, 1:]))
-
-        if optimizer and scaler:
+        if optimizer:
             optimizer.zero_grad()
-            scaler.scale(loss).backward()
-            scaler.unscale_(optimizer)
+            loss.backward()
             torch.nn.utils.clip_grad_norm_(
                 manager.model.parameters(),
                 manager.clip_grad,
             )
-            scaler.step(optimizer)
-            scaler.update()
+            optimizer.step()
 
         total_loss += batch_length * loss.item()
         num_tokens += batch_length
@@ -65,7 +53,6 @@ def train_model(train_data: list[Batch], val_data: list[Batch], manager: Manager
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, factor=manager.decay_factor, patience=manager.patience
     )
-    scaler = torch.cuda.amp.GradScaler()
 
     epoch = patience = 0
     best_loss = torch.inf
@@ -74,7 +61,7 @@ def train_model(train_data: list[Batch], val_data: list[Batch], manager: Manager
 
         model.train()
         start = time.perf_counter()
-        train_loss = train_epoch(train_data, manager, criterion, optimizer, scaler)
+        train_loss = train_epoch(train_data, manager, criterion, optimizer)
         elapsed = timedelta(seconds=(time.perf_counter() - start))
 
         model.eval()
@@ -111,17 +98,9 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--lang-pair', required=True, help='source-target language pair')
-    parser.add_argument(
-        '--train-data', metavar='FILE_PATH', required=True, help='parallel training data'
-    )
-    parser.add_argument(
-        '--val-data', metavar='FILE_PATH', required=True, help='parallel validation data'
-    )
-    parser.add_argument('--lem-train', metavar='FILE_PATH', help='lemmatized training data')
-    parser.add_argument('--lem-val', metavar='FILE_PATH', help='lemmatized validation data')
-    parser.add_argument('--dict', metavar='FILE_PATH', help='bilingual dictionary')
-    parser.add_argument('--freq', metavar='FILE_PATH', help='frequency statistics')
+    parser.add_argument('--lang-pair', required=True, help='language pair')
+    parser.add_argument('--train-data', metavar='FILE_PATH', required=True, help='training data')
+    parser.add_argument('--val-data', metavar='FILE_PATH', required=True, help='validation data')
     parser.add_argument('--sw-vocab', metavar='FILE_PATH', required=True, help='subword vocab')
     parser.add_argument('--sw-model', metavar='FILE_PATH', required=True, help='subword model')
     parser.add_argument('--model', metavar='FILE_PATH', required=True, help='translation model')
@@ -154,17 +133,16 @@ def main():
         args.model,
         args.sw_vocab,
         args.sw_model,
-        args.dict,
-        args.freq,
     )
-    train_data = manager.load_data(args.train_data, args.lem_train)
-    val_data = manager.load_data(args.val_data, args.lem_val)
+    train_data = manager.load_data(args.train_data)
+    val_data = manager.load_data(args.val_data)
 
     if device == 'cuda' and torch.cuda.get_device_capability()[0] >= 8:
         torch.set_float32_matmul_precision('high')
 
     logger = logging.getLogger('translation.logger')
     logger.addHandler(logging.FileHandler(args.log))
+    logger.addHandler(logging.StreamHandler())
     logger.setLevel(logging.INFO)
 
     train_model(train_data, val_data, manager, logger)

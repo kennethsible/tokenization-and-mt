@@ -3,10 +3,7 @@ import os
 import re
 
 import sentencepiece as spm
-from subword_nmt.apply_bpe import BPE
 from tqdm import tqdm
-
-from translation.manager import Lemmatizer
 
 
 def normalize(file_path: str, src_lang: str, tgt_lang: str) -> str:
@@ -96,9 +93,10 @@ def apply_initial_filter(file_path: str, src_lang: str, tgt_lang: str):
                 src_line = re.sub(r'\s+', ' ', src_line)
                 tgt_line = re.sub(r'\s+', ' ', tgt_line)
                 lines.append(f'{src_line}\t{tgt_line}')
-    with open(f'{file_path}.{src_lang}', 'w') as src_f, open(
-        f'{file_path}.{tgt_lang}', 'w'
-    ) as tgt_f:
+    with (
+        open(f'{file_path}.{src_lang}', 'w') as src_f,
+        open(f'{file_path}.{tgt_lang}', 'w') as tgt_f,
+    ):
         for unique_lines in list(dict.fromkeys(lines)):
             src_line, tgt_line = unique_lines.split('\t')
             src_f.write(src_line + '\n')
@@ -128,12 +126,12 @@ def main():
     parser.add_argument('--data-dir', required=True, help='data directory')
     parser.add_argument('--max-length', type=int, required=True, help='maximum length')
     parser.add_argument('--len-ratio', type=float, required=True, help='length ratio')
-    parser.add_argument('--lemmatize', action='store_true', help='lemmatize source')
     subparsers = parser.add_subparsers(dest='cmd', help='BPE or SentencePiece')
     bpe_parser = subparsers.add_parser('bpe')
+
     bpe_parser.add_argument('--merge-ops', required=True, help='merge operations')
-    bpe_parser.add_argument('--dropout', type=float, help='subword dropout')
-    bpe_parser.add_argument('--seed', type=int, help='random seed')
+    bpe_parser.add_argument('--dropout', type=float, default=0.0, help='subword dropout')
+    bpe_parser.add_argument('--seed', type=int, default=0, help='random seed')
     sp_parser = subparsers.add_parser('spm')
     sp_parser.add_argument('--vocab-size', required=True, help='vocab size')
     sp_parser.add_argument('--model-type', required=True, help='model type')
@@ -196,33 +194,17 @@ def main():
         train_path = apply_bpe(train_path, data_dir, src_lang, tgt_lang, args.dropout, args.seed)
         val_path = apply_bpe(val_path, data_dir, src_lang, tgt_lang)
         os.system(f'wc -l {data_dir}/{src_lang}-{tgt_lang}.vocab')
-        with open(f'{data_dir}/{src_lang}-{tgt_lang}.model') as model_f:
-            sw_model = BPE(model_f)
     else:
-        print('\n[11/10] Learning and Applying SentencePiece...')
+        print('\n[9/10] Learning and Applying SentencePiece...')
         learn_spm(train_path, src_lang, tgt_lang, args.vocab_size, args.model_type)
         apply_spm(train_path, src_lang, tgt_lang)
         apply_spm(val_path, src_lang, tgt_lang)
         os.system(f'mv {src_lang}-{tgt_lang}.model {src_lang}-{tgt_lang}.vocab {data_dir}')
         os.system(f'wc -l {data_dir}/{src_lang}-{tgt_lang}.vocab')
-        sw_model = spm.SentencePieceProcessor(f'{src_lang}-{tgt_lang}.model')
 
     print('\n[10/10] Post-Filtering Training Data...')
     apply_final_filter(f'{train_path}.{src_lang}-{tgt_lang}', args.max_length, args.len_ratio)
     os.system(f'wc -l {train_path}.{src_lang}-{tgt_lang}')
-
-    if args.lemmatize:
-        print('\n[-/10] Lemmatizing Source Data...')
-        lemmatizer = Lemmatizer(f'{src_lang}_core_news_sm', sw_model)
-        for file_path in (train_path, val_path):
-            src_words = []
-            with open(f'{file_path}.{src_lang}-{tgt_lang}') as src_f:
-                for line in src_f.readlines():
-                    src_line = line.split('\t')[0]
-                    src_words.append(src_line.split())
-            with open(f'{file_path.split(".")[0]}.lem.{src_lang}', 'w') as lem_f:
-                for words, spans in tqdm(lemmatizer.lemmatize(src_words), total=len(src_words)):
-                    lem_f.write(f"{' '.join(words)}\t{' '.join(map(str, spans))}\n")
 
     print('\nDone.')
 

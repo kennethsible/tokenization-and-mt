@@ -5,7 +5,6 @@ import torch.nn as nn
 from torch import Tensor
 
 from translation.layers import (
-    DictionaryEncoding,
     Embedding,
     FeedForward,
     MultiHeadAttention,
@@ -34,12 +33,8 @@ class EncoderLayer(nn.Module):
         self.ff = FeedForward(embed_dim, ff_dim, dropout)
         self.sublayers = clone(SublayerConnection(embed_dim, dropout), 2)
 
-    def forward(
-        self, src_encs: Tensor, src_mask: Tensor | None = None, dict_mask: Tensor | None = None
-    ) -> Tensor:
-        src_encs = self.sublayers[0](
-            src_encs, lambda x: self.self_attn(x, x, x, src_mask, dict_mask)
-        )
+    def forward(self, src_encs: Tensor, src_mask: Tensor | None = None) -> Tensor:
+        src_encs = self.sublayers[0](src_encs, lambda x: self.self_attn(x, x, x, src_mask))
         return self.sublayers[1](src_encs, self.ff)
 
 
@@ -51,12 +46,10 @@ class Encoder(nn.Module):
         self.layers = clone(EncoderLayer(embed_dim, ff_dim, num_heads, dropout), num_layers)
         self.norm = ScaleNorm(embed_dim**0.5)
 
-    def forward(
-        self, src_embs: Tensor, src_mask: Tensor | None = None, dict_mask: Tensor | None = None
-    ) -> Tensor:
+    def forward(self, src_embs: Tensor, src_mask: Tensor | None = None) -> Tensor:
         src_encs = src_embs
         for layer in self.layers:
-            src_encs = layer(src_encs, src_mask, dict_mask)
+            src_encs = layer(src_encs, src_mask)
         return self.norm(src_encs)
 
 
@@ -118,22 +111,10 @@ class Model(nn.Module):
         self.out_embed = Embedding(embed_dim, math.ceil(vocab_dim / 8) * 8)
         self.src_embed = nn.Sequential(self.out_embed, PositionalEncoding(embed_dim, dropout))
         self.tgt_embed = nn.Sequential(self.out_embed, PositionalEncoding(embed_dim, dropout))
-        self.dpe_embed = nn.Sequential(self.out_embed, DictionaryEncoding(embed_dim))
 
-    def encode(
-        self,
-        src_nums: Tensor,
-        src_mask: Tensor | None = None,
-        dict_mask: Tensor | None = None,
-        dict_data=None,
-    ) -> Tensor:
+    def encode(self, src_nums: Tensor, src_mask: Tensor | None = None) -> Tensor:
         src_embs = self.src_embed(src_nums)
-        if dict_data is not None:
-            for i, (lemmas, senses) in enumerate(dict_data):
-                for (a, _), sense_spans in zip(lemmas, senses):
-                    for c, d in sense_spans:
-                        src_embs[i, c:d] = src_embs[i, a] + self.dpe_embed(src_nums[i, c:d])
-        return self.encoder(src_embs, src_mask, dict_mask)
+        return self.encoder(src_embs, src_mask)
 
     def decode(
         self,
@@ -151,9 +132,7 @@ class Model(nn.Module):
         tgt_nums: Tensor,
         src_mask: Tensor | None = None,
         tgt_mask: Tensor | None = None,
-        dict_mask: Tensor | None = None,
-        dict_data=None,
     ) -> Tensor:
-        src_encs = self.encode(src_nums, src_mask, dict_mask, dict_data)
+        src_encs = self.encode(src_nums, src_mask)
         tgt_encs = self.decode(src_encs, tgt_nums, src_mask, tgt_mask)
         return self.out_embed(tgt_encs, inverse=True)
