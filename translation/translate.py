@@ -7,6 +7,7 @@ from torch import Tensor
 
 from translation.decoder import beam_search
 from translation.manager import Manager, Tokenizer
+from translation.sampling import sampling_search
 
 
 def chunk_list(input_list: list, chunk_size: int) -> list:
@@ -57,7 +58,9 @@ def mbr_decoding(
     return best_translation
 
 
-def translate(string: str, manager: Manager, *, mbr_metric: str | None = None) -> str:
+def translate(
+    string: str, manager: Manager, *, mbr_metric: str | None = None, mbr_sampling: str | None = None
+) -> str:
     model, vocab, device = manager.model, manager.vocab, manager.device
     beam_size, max_length = manager.beam_size, math.floor(manager.max_length * 1.3)
     tokenizer = Tokenizer(manager.src_lang, manager.tgt_lang, manager.sw_model)
@@ -67,7 +70,15 @@ def translate(string: str, manager: Manager, *, mbr_metric: str | None = None) -
     with torch.no_grad():
         src_nums = torch.tensor(vocab.numberize(src_words), device=device)
         src_encs = model.encode(src_nums.unsqueeze(0))
-        out_nums, paths, probs = beam_search(manager, src_encs, beam_size, max_length)
+        if mbr_sampling is None:
+            out_nums, paths, probs = beam_search(manager, src_encs, beam_size, max_length)
+        else:
+            paths = torch.empty((beam_size, max_length), dtype=torch.int, device=device)
+            probs = torch.zeros(beam_size, dtype=torch.int, device=device)
+            for i in range(beam_size):
+                out_nums, prob = sampling_search(manager, src_encs, mbr_sampling, max_length)
+                paths[i] = out_nums
+                probs[i] = prob
         if mbr_metric is not None:
             return mbr_decoding(paths, probs, manager, metric=mbr_metric, source=string)
 
@@ -81,6 +92,7 @@ def main():
     parser.add_argument('--sw-vocab', metavar='FILE_PATH', required=True, help='subword vocab')
     parser.add_argument('--sw-model', metavar='FILE_PATH', required=True, help='subword model')
     parser.add_argument('--mbr-metric', metavar='METRIC', help='evaluation metric')
+    parser.add_argument('--mbr-sampling', metavar='METHOD', help='sampling method')
     parser.add_argument('--model', metavar='FILE_PATH', required=True, help='translation model')
     parser.add_argument('--input', metavar='FILE_PATH', help='detokenized input')
     args, unknown = parser.parse_known_args()
@@ -113,7 +125,11 @@ def main():
 
     with open(args.input) as data_f:
         for string in data_f.readlines():
-            print(translate(string, manager, mbr_metric=args.mbr_metric))
+            print(
+                translate(
+                    string, manager, mbr_metric=args.mbr_metric, mbr_sampling=args.mbr_sampling
+                )
+            )
 
 
 if __name__ == '__main__':

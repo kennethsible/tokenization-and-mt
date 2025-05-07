@@ -125,6 +125,9 @@ class Manager:
     batch_size: int
     max_length: int
     beam_size: int
+    k: int
+    p: int
+    epsilon: int
 
     def __init__(
         self,
