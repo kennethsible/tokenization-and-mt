@@ -4,8 +4,9 @@ from typing import Callable, Optional
 from .constants import (
     MorphologyDataSource,
     NamedCorpusTokenizationMetric,
+    NamedFeatureTokenizationMetric,
     NamedLanguageModel,
-    NamedMorphologyTokenizationMetric,
+    NamedParadigmTokenizationMetric,
     TokenizationLanguage,
 )
 from .constructors import (
@@ -16,27 +17,31 @@ from .constructors import (
 )
 from .helpers import collect_tokenizer_filepaths, get_tokenizers, retrieve_default_filepath
 from .metrics import (
+    compute_morphological_rajski_distance,
     compute_paradigm_adherence,
     compute_paradigm_coherence,
     compute_average_fertility,
     compute_average_tps,
 )
 from .tables import (
-    AGGREGATE_MORPHOLOGY_METRIC_MAPPING,
+    AGGREGATE_FEATURE_METRIC_MAPPING,
+    AGGREGATE_PARADIGM_METRIC_MAPPING,
     CORPUS_METRIC_MAPPING,
     DEFAULT_DERIVATION_FILEPATHS,
     DEFAULT_DERIVATION_FUNCTIONS,
     DEFAULT_INFLECTION_FILEPATHS,
     DEFAULT_INFLECTION_FUNCTIONS,
     DEFAULT_TOKENIZER_FILEPATHS,
-    INDIVIDUAL_MORPHOLOGY_METRIC_MAPPING,
-    INDIVIDUAL_MORPHOLOGY_WRITER_MAPPING,
+    INDIVIDUAL_PARADIGM_METRIC_MAPPING,
+    INDIVIDUAL_PARADIGM_WRITER_MAPPING,
     MODELS_BY_LANGUAGE,
 )
 from .types import (
+    AggregateFeatureMetric,
     AggregateParadigmMetric,
     CorpusMetric,
     DerivationMap,
+    FeaturedWordlist,
     IndividualParadigmMetric,
     IndividualParadigmWriter,
     InflectionMap,
@@ -93,28 +98,46 @@ def get_tokenization_corpus_metric(metric: str):
     return metric_function
 
 
-def get_tokenization_aggregate_morphology_metric(metric: str):
+def get_tokenization_aggregate_paradigm_metric(metric: str):
     try:
-        metric_function: AggregateParadigmMetric = AGGREGATE_MORPHOLOGY_METRIC_MAPPING[metric]
+        metric_function: AggregateParadigmMetric = AGGREGATE_PARADIGM_METRIC_MAPPING[metric]
     except KeyError:
         raise ValueError(f"The metric <{metric}> is not currently supported.")
 
     return metric_function
 
 
-def get_tokenization_individual_morphology_metric(metric: str):
+def get_tokenization_aggregate_feature_metric(metric: str):
     try:
-        metric_function: IndividualParadigmMetric = INDIVIDUAL_MORPHOLOGY_METRIC_MAPPING[metric]
+        metric_function: AggregateFeatureMetric = AGGREGATE_FEATURE_METRIC_MAPPING[metric]
     except KeyError:
         raise ValueError(f"The metric <{metric}> is not currently supported.")
 
     return metric_function
 
 
-def get_tokenization_morphology_writer(metric: str) -> IndividualParadigmWriter:
+def get_tokenization_individual_paradigm_metric(metric: str):
     try:
-        output_function: IndividualParadigmWriter = INDIVIDUAL_MORPHOLOGY_WRITER_MAPPING[metric]
+        metric_function: IndividualParadigmMetric = INDIVIDUAL_PARADIGM_METRIC_MAPPING[metric]
+    except KeyError:
+        raise ValueError(f"The metric <{metric}> is not currently supported.")
+
+    return metric_function
+
+
+def get_tokenization_paradigm_writer(metric: str) -> IndividualParadigmWriter:
+    try:
+        output_function: IndividualParadigmWriter = INDIVIDUAL_PARADIGM_WRITER_MAPPING[metric]
     except KeyError:
         raise ValueError(f"The metric <{metric}> is not currently supported.")
 
     return output_function
+
+
+def get_tokenization_feature_metric(metric: str):
+    try:
+        metric_function: AggregateFeatureMetric = AGGREGATE_FEATURE_METRIC_MAPPING[metric]
+    except KeyError:
+        raise ValueError(f"The metric <{metric}> is not currently supported.")
+
+    return metric_function

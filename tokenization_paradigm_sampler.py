@@ -6,14 +6,14 @@ from typing import Any
 from utils.metrics.tokenization import (
     collect_tokenizer_filepaths,
     derive_paradigms,
-    get_tokenization_individual_morphology_metric,
-    get_tokenization_morphology_writer,
+    get_tokenization_individual_paradigm_metric,
+    get_tokenization_paradigm_writer,
     get_tokenizers,
     IndividualParadigmMetric,
     IndividualParadigmWriter,
     MorphologyDataSource,
     NamedLanguageModel,
-    NamedMorphologyTokenizationMetric,
+    NamedParadigmTokenizationMetric,
     Paradigm,
     TokenizationLanguage,
 )
@@ -25,7 +25,7 @@ if __name__ == "__main__":
         "--language-model", type=str, choices=list(NamedLanguageModel), required=True
     )
     parser.add_argument(
-        "--metric", type=str, choices=list(NamedMorphologyTokenizationMetric), required=True
+        "--metric", type=str, choices=list(NamedParadigmTokenizationMetric), required=True
     )
     parser.add_argument(
         "--derivation-source", type=str, choices=list(MorphologyDataSource), default=None
@@ -51,7 +51,7 @@ if __name__ == "__main__":
         args.language, args.inflection_source, args.derivation_source
     )
 
-    metric_function: IndividualParadigmMetric = get_tokenization_individual_morphology_metric(
+    metric_function: IndividualParadigmMetric = get_tokenization_individual_paradigm_metric(
         args.metric
     )
     sample_paradigms: list[Paradigm] = sample(paradigms, k=args.sample_size)
@@ -61,5 +61,5 @@ if __name__ == "__main__":
         *_, results = metric_function(tokenizer, paradigm, tokenizer_kwargs)
         sample_results.append(results)
 
-    output_function: IndividualParadigmWriter = get_tokenization_morphology_writer(args.metric)
+    output_function: IndividualParadigmWriter = get_tokenization_paradigm_writer(args.metric)
     output_function(args.output_filepath, tokenizer, sample_paradigms, sample_results)

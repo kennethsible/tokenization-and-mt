@@ -12,26 +12,6 @@ PARADIGM_BULLET: str = "\n\t* {0}: ({1})"
 PARADIGM_ADHERENCE_SUBBULLET: str = "\n\t\t- {0} (Expected) vs. {1} (Actual); Deviation: {2}"
 
 
-GREEK_NORMALIZATION_MAP: dict[str, str] = {
-    "ᾱ": "α",
-    "ᾰ": "α",
-    "Ᾱ": "Α",
-    "Ᾰ": "Α",
-    "ῑ": "ι",
-    "ῐ": "ι",
-    "Ῑ": "Ι",
-    "Ῐ": "Ι",
-    "ῡ": "υ",
-    "ῠ": "υ",
-    "Ῡ": "Υ",
-    "Ῠ": "Υ",
-    "(": "",
-    ")": "",
-    "̄": "",
-    "̆": "",
-}
-
-
 class MorphologyDataSource(StrEnum):
     UNIMORPH: str = "unimorph"
     UNIMORPH_CORRECTED: str = "unimorph-corrected"
@@ -58,10 +38,14 @@ class NamedCorpusTokenizationMetric(StrEnum):
     FERTILITY: str = "fertility"
 
 
-class NamedMorphologyTokenizationMetric(StrEnum):
+class NamedParadigmTokenizationMetric(StrEnum):
     DERIVATIONALLY_AWARE_PARADIGM_COHERENCE: str = "da-paradigm-coherence"
     PARADIGM_ADHERENCE: str = "paradigm-adherence"
     PARADIGM_COHERENCE: str = "paradigm-coherence"
+
+
+class NamedFeatureTokenizationMetric(StrEnum):
+    MORPHOLOGICAL_RAJSKI_DISTANCE: str = "mor-dist"
 
 
 class TokenizationLanguage(StrEnum):

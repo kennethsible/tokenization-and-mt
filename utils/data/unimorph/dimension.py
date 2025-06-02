@@ -1,0 +1,28 @@
+from enum import StrEnum
+
+
+class UnimorphDimension(StrEnum):
+    AKTIONSART: str = "aktionsart"
+    ANIMACY: str = "animacy"
+    ASPECT: str = "aspect"
+    CASE: str = "case"
+    COMPARISON: str = "comparison"
+    DEFINITENESS: str = "definiteness"
+    DEIXIS: str = "deixis"
+    EVIDENTIALITY: str = "evidentiality"
+    FINITENESS: str = "finiteness"
+    GENDER: str = "gender"
+    INFORMATION_STRUCTURE: str = "is"
+    INTERROGATIVITY: str = "interrogativity"
+    LANGUAGE_SPECIFIC_FEATURE: str = "lsf"
+    MOOD: str = "mood"
+    NUMBER: str = "number"
+    PART_OF_SPEECH: str = "pos"
+    PERSON: str = "person"
+    POLARITY: str = "polarity"
+    POLITENESS: str = "politeness"
+    POSSESSION: str = "possession"
+    SWITCH_REFERENCE: str = "sr"
+    TENSE: str = "tense"
+    VALENCY: str = "valency"
+    VOICE: str = "voice"

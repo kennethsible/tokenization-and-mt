@@ -6,8 +6,9 @@ from .constants import (
     MorphologyDataSource,
     NamedLanguageModel,
     NamedCorpusTokenizationMetric,
-    NamedMorphologyTokenizationMetric,
+    NamedParadigmTokenizationMetric,
     TokenizationLanguage,
+    NamedFeatureTokenizationMetric,
 )
 from .constructors import (
     load_unimorph_ancient_greek_inflections,
@@ -23,12 +24,14 @@ from .metrics import (
     compute_paradigm_adherence,
     compute_paradigm_coherence,
     compute_da_paradigm_coherence,
+    compute_morphological_rajski_distance,
 )
 from .types import (
     AggregateParadigmMetric,
     CorpusMetric,
     IndividualParadigmMetric,
     IndividualParadigmWriter,
+    AggregateFeatureMetric,
 )
 from .writers import (
     write_paradigm_adherence_results,
@@ -66,7 +69,7 @@ DEFAULT_TOKENIZER_FILEPATHS: dict[NamedLanguageModel, Path] = {
     NamedLanguageModel.CANINE_S: Path("resources/multi/canine-s"),
     NamedLanguageModel.GREBERTA: Path("resources/grc/greberta"),
     NamedLanguageModel.ICEBERT: Path("resources/isl/icebert"),
-    NamedLanguageModel.IS_ROBERTA: Path("resources/isl/is-roberta"),
+    NamedLanguageModel.IS_ROBERTA: Path("resources/isl/IsRoBERTa"),
     NamedLanguageModel.LATIN_BERT: Path(
         "resources/lat/latin-bert/subword_tokenizer_latin/latin.subword.encoder"
     ),
@@ -120,24 +123,28 @@ CORPUS_METRIC_MAPPING: dict[str, CorpusMetric] = {
     NamedCorpusTokenizationMetric.FERTILITY: compute_average_fertility,
 }
 
-AGGREGATE_MORPHOLOGY_METRIC_MAPPING: dict[str, AggregateParadigmMetric] = {
-    NamedMorphologyTokenizationMetric.DERIVATIONALLY_AWARE_PARADIGM_COHERENCE: partial(
+AGGREGATE_FEATURE_METRIC_MAPPING: dict[NamedFeatureTokenizationMetric, AggregateFeatureMetric] = {
+    NamedFeatureTokenizationMetric.MORPHOLOGICAL_RAJSKI_DISTANCE: compute_morphological_rajski_distance
+}
+
+AGGREGATE_PARADIGM_METRIC_MAPPING: dict[str, AggregateParadigmMetric] = {
+    NamedParadigmTokenizationMetric.DERIVATIONALLY_AWARE_PARADIGM_COHERENCE: partial(
         compute_aggregate_paradigm_coherence, coherence_function=compute_da_paradigm_coherence
     ),
-    NamedMorphologyTokenizationMetric.PARADIGM_ADHERENCE: compute_aggregate_paradigm_adherence,
-    NamedMorphologyTokenizationMetric.PARADIGM_COHERENCE: partial(
+    NamedParadigmTokenizationMetric.PARADIGM_ADHERENCE: compute_aggregate_paradigm_adherence,
+    NamedParadigmTokenizationMetric.PARADIGM_COHERENCE: partial(
         compute_aggregate_paradigm_coherence, coherence_function=compute_paradigm_coherence
     ),
 }
 
-INDIVIDUAL_MORPHOLOGY_METRIC_MAPPING: dict[str, IndividualParadigmMetric] = {
-    NamedMorphologyTokenizationMetric.DERIVATIONALLY_AWARE_PARADIGM_COHERENCE: compute_da_paradigm_coherence,
-    NamedMorphologyTokenizationMetric.PARADIGM_ADHERENCE: compute_paradigm_adherence,
-    NamedMorphologyTokenizationMetric.PARADIGM_COHERENCE: compute_paradigm_coherence,
+INDIVIDUAL_PARADIGM_METRIC_MAPPING: dict[str, IndividualParadigmMetric] = {
+    NamedParadigmTokenizationMetric.DERIVATIONALLY_AWARE_PARADIGM_COHERENCE: compute_da_paradigm_coherence,
+    NamedParadigmTokenizationMetric.PARADIGM_ADHERENCE: compute_paradigm_adherence,
+    NamedParadigmTokenizationMetric.PARADIGM_COHERENCE: compute_paradigm_coherence,
 }
 
-INDIVIDUAL_MORPHOLOGY_WRITER_MAPPING: dict[str, IndividualParadigmWriter] = {
-    NamedMorphologyTokenizationMetric.DERIVATIONALLY_AWARE_PARADIGM_COHERENCE: write_da_paradigm_coherence_results,
-    NamedMorphologyTokenizationMetric.PARADIGM_ADHERENCE: write_paradigm_adherence_results,
-    NamedMorphologyTokenizationMetric.PARADIGM_COHERENCE: write_paradigm_coherence_results,
+INDIVIDUAL_PARADIGM_WRITER_MAPPING: dict[str, IndividualParadigmWriter] = {
+    NamedParadigmTokenizationMetric.DERIVATIONALLY_AWARE_PARADIGM_COHERENCE: write_da_paradigm_coherence_results,
+    NamedParadigmTokenizationMetric.PARADIGM_ADHERENCE: write_paradigm_adherence_results,
+    NamedParadigmTokenizationMetric.PARADIGM_COHERENCE: write_paradigm_coherence_results,
 }

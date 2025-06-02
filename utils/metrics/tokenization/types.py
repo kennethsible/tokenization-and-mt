@@ -5,6 +5,7 @@ from transformers import PreTrainedTokenizer
 from tensor2tensor.data_generators.text_encoder import SubwordTextEncoder
 
 from utils.data.corpora import BaseCorpusDataset
+from utils.data.unimorph import CategoryMap
 
 
 class MorphemeTable(NamedTuple):
@@ -26,21 +27,28 @@ Paradigm: TypeAlias = dict[tuple[str, Any], MorphemeTable]
 ParadigmConstructor: TypeAlias = Callable[
     [InflectionMap, ..., Optional[DerivationMap]], list[Paradigm]
 ]
+FeaturedWordlist: TypeAlias = list[tuple[str, dict[str, str]]]
+
 SubwordTokenizer: TypeAlias = Union[PreTrainedTokenizer, SubwordTextEncoder]
+TokenizerKwargs: TypeAlias = dict[str, bool]
 
 AggregateParadigmMetric: TypeAlias = Callable[
-    [SubwordTokenizer, list[Paradigm], dict[str, Any]], float
+    [SubwordTokenizer, list[Paradigm], TokenizerKwargs, ...], float
 ]
 CorpusMetric: TypeAlias = Callable[
-    [SubwordTokenizer, BaseCorpusDataset, dict[str, Any], ...], float
+    [SubwordTokenizer, BaseCorpusDataset, TokenizerKwargs, ...], float
 ]
 IndividualParadigmMetric: TypeAlias = Callable[
-    [SubwordTokenizer, Paradigm, dict[str, Any]], tuple[..., float, dict[str, Any]]
+    [SubwordTokenizer, Paradigm, TokenizerKwargs], tuple[..., float, dict[str, Any]]
 ]
 IndividualParadigmWriter: TypeAlias = Callable[
-    [Path, SubwordTokenizer, list[Paradigm], list[dict[str, Any]]], None
+    [Path, SubwordTokenizer, list[Paradigm], list[TokenizerKwargs]], None
 ]
 
 CoherenceFunction: TypeAlias = Callable[
-    [SubwordTokenizer, Paradigm, dict[str, Any]], tuple[int, float, dict[str, Any]]
+    [SubwordTokenizer, Paradigm, TokenizerKwargs], tuple[int, float, dict[str, Any]]
+]
+
+AggregateFeatureMetric: TypeAlias = Callable[
+    [SubwordTokenizer, CategoryMap, FeaturedWordlist, TokenizerKwargs], tuple[float, dict[str, Any]]
 ]
