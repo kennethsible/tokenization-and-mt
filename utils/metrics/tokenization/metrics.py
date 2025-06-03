@@ -201,6 +201,52 @@ def compute_morphological_rajski_distance(
 ) -> tuple[float, dict[str, float]]:
     mutual_information_map: dict[str, float] = {}
 
+    joint_frequency_matrices: list[csr_array] = build_joint_frequency_matrices(
+        tokenizer,
+        categories,
+        featured_forms,
+        tokenizer_kwargs,
+        add_null_feature,
+        processes,
+        batch_size,
+    )
+
+    for index, category in tqdm(
+        enumerate(categories.keys()), desc="Handling Categories", total=len(categories)
+    ):
+        csr_frequency_matrix: csr_array = joint_frequency_matrices.pop(0).tocsr()
+        joint_distribution_matrix: csr_array = (
+            csr_frequency_matrix / csr_frequency_matrix.sum()
+        ).astype(dtype=float32)
+        mutual_information_map[category] = compute_categorical_rajski_distance(
+            joint_distribution_matrix, processes, batch_size
+        )
+
+    print(mutual_information_map)
+
+    return mean(list(mutual_information_map.values())), mutual_information_map
+
+
+def build_feature_matrices(
+    categories: CategoryMap, add_null_feature: bool, matrix_dtype: DTypeLike, vocabulary_size: int
+) -> list[dok_array]:
+    tag_modifier: int = 1 if add_null_feature is True else 0
+    joint_frequency_matrices: list[dok_array] = [
+        dok_array((vocabulary_size, len(category_tags) + tag_modifier), dtype=matrix_dtype)
+        for category_tags in categories.values()
+    ]
+    return joint_frequency_matrices
+
+
+def build_joint_frequency_matrices(
+    tokenizer: SubwordTokenizer,
+    categories: CategoryMap,
+    featured_forms: FeaturedWordlist,
+    tokenizer_kwargs: TokenizerKwargs,
+    add_null_feature: bool,
+    processes: int,
+    batch_size: int,
+):
     tokenized_featured_forms: list[tuple[list[int], dict[str, str]]] = [
         (tokenizer.encode(form, **tokenizer_kwargs), features)
         for (form, features) in tqdm(featured_forms, desc="Tokenizing Forms")
@@ -241,32 +287,7 @@ def compute_morphological_rajski_distance(
     joint_frequency_matrices: list[dok_array] = [
         sum([matrices[i] for matrices in batch_matrices]) for i in range(0, len(categories))
     ]
-    # write_frequencies(tokenizer, categories, joint_frequency_matrices)
 
-    for index, category in tqdm(
-        enumerate(categories.keys()), desc="Handling Categories", total=len(categories)
-    ):
-        csr_frequency_matrix: csr_array = joint_frequency_matrices.pop(0).tocsr()
-        joint_distribution_matrix: csr_array = (
-            csr_frequency_matrix / csr_frequency_matrix.sum()
-        ).astype(dtype=float32)
-        mutual_information_map[category] = compute_categorical_rajski_distance(
-            joint_distribution_matrix, processes, batch_size
-        )
-
-    print(mutual_information_map)
-
-    return mean(list(mutual_information_map.values())), mutual_information_map
-
-
-def build_feature_matrices(
-    categories: CategoryMap, add_null_feature: bool, matrix_dtype: DTypeLike, vocabulary_size: int
-) -> list[dok_array]:
-    tag_modifier: int = 1 if add_null_feature is True else 0
-    joint_frequency_matrices: list[dok_array] = [
-        dok_array((vocabulary_size, len(category_tags) + tag_modifier), dtype=matrix_dtype)
-        for category_tags in categories.values()
-    ]
     return joint_frequency_matrices
 
 
