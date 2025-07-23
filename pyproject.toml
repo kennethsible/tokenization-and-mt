@@ -1,59 +1,60 @@
 [project]
 name = "translation"
-version = "0.1.0"
+version = "1.0.0"
+description = "Neural Machine Translation System"
+license = { text = "MIT" }
 authors = [{ name = "Ken Sible", email = "ksible@nd.edu" }]
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dependencies = [
-    "torch>=2.4.0",
     "sacremoses>=0.1.1",
     "subword-nmt>=0.3.8",
     "sentencepiece>=0.2.0",
-    "spacy~=3.8.4",
     "tqdm>=4.67.1",
 ]
+
+[project.optional-dependencies]
+cpu = ["torch>=2.7.1"]
+cu128 = ["torch>=2.7.1"]
+
+[dependency-groups]
+metrics = ["sacrebleu>=2.5.1", "unbabel-comet>=2.2.6", "bert-score>=0.3.13"]
+dev = ["ruff>=0.12.4", "mypy>=1.17.0", "pytest>=8.4.1"]
+crc = ["qfunnel@git+https://github.com/bdusell/qfunnel.git"]
 
 [project.scripts]
 translate = "translation.translate:main"
 
-[tool.poetry]
-requires-poetry = ">=2.0"
-packages = [{ include = "translation" }]
+[tool.uv]
+conflicts = [[{ extra = "cpu" }, { extra = "cu128" }]]
 
-[[tool.poetry.source]]
-name = "pytorch-cuda"
-url = "https://download.pytorch.org/whl/cu124"
-priority = "supplemental"
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu", extra = "cpu" },
+    { index = "pytorch-cu128", extra = "cu128" },
+]
 
-[tool.poetry.dependencies]
-python = ">=3.10,<3.13"
-torch = { source = "pytorch-cuda" }
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.3.4"
-black = "^25.1.0"
-isort = "^6.0.0"
-ruff = "^0.9.6"
-mypy = "^1.15.0"
-
-[tool.poetry.group.metrics.dependencies]
-sacrebleu = "^2.5.1"
-unbabel-comet = "^2.2.4"
-bert-score = "^0.3.13"
-
-[tool.black]
-skip-string-normalization = true
-line-length = 100
-
-[tool.isort]
-profile = "black"
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
 
 [tool.ruff]
-extend-select = ["I"]
 line-length = 100
+
+[tool.ruff.lint]
+extend-select = ["I"]
+
+[tool.ruff.format]
+quote-style = "single"
 
 [tool.mypy]
 ignore_missing_imports = true
 
 [build-system]
-requires = ["poetry-core>=2.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
