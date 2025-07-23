@@ -1,4 +1,5 @@
 import math
+import os
 
 import torch
 from comet import download_model, load_from_checkpoint
@@ -59,7 +60,7 @@ def mbr_decoding(
 
 
 def translate(
-    string: str, manager: Manager, *, mbr_metric: str | None = None, mbr_sampling: str | None = None
+    string: str, manager: Manager, mbr_metric: str | None = None, mbr_sampling: str | None = None
 ) -> str:
     model, vocab, device = manager.model, manager.vocab, manager.device
     beam_size, max_length = manager.beam_size, math.floor(manager.max_length * 1.3)
@@ -70,7 +71,7 @@ def translate(
     with torch.no_grad():
         src_nums = torch.tensor(vocab.numberize(src_words), device=device)
         src_encs = model.encode(src_nums.unsqueeze(0))
-        if mbr_sampling is None:
+        if mbr_sampling is None or mbr_sampling == 'beam-search':
             out_nums, paths, probs = beam_search(manager, src_encs, beam_size, max_length)
         else:
             paths = torch.empty((beam_size, max_length), dtype=torch.int, device=device)
@@ -93,8 +94,8 @@ def main():
     parser.add_argument('--sw-model', metavar='FILE_PATH', required=True, help='subword model')
     parser.add_argument('--mbr-metric', metavar='METRIC', help='evaluation metric')
     parser.add_argument('--mbr-sampling', metavar='METHOD', help='sampling method')
-    parser.add_argument('--model', metavar='FILE_PATH', required=True, help='translation model')
-    parser.add_argument('--input', metavar='FILE_PATH', help='detokenized input')
+    parser.add_argument('--model', metavar='FILE_PATH', required=True, help='pytorch model')
+    parser.add_argument('--input', type=argparse.FileType('r'), help='detokenized input')
     args, unknown = parser.parse_known_args()
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -120,16 +121,13 @@ def main():
     )
     manager.model.load_state_dict(model_state['state_dict'], strict=False)
 
-    # if device == 'cuda' and torch.cuda.get_device_capability()[0] >= 8:
-    #     torch.set_float32_matmul_precision('high')
-
-    with open(args.input) as data_f:
-        for string in data_f.readlines():
-            print(
-                translate(
-                    string, manager, mbr_metric=args.mbr_metric, mbr_sampling=args.mbr_sampling
-                )
-            )
+    if os.path.exists(args.input):
+        for string in args.input.readlines():
+            print(translate(string, manager, args.mbr_metric, args.mbr_sampling))
+        args.input.close()
+    else:
+        for string in args.input.splitlines():
+            print(translate(string, manager, args.mbr_metric, args.mbr_sampling))
 
 
 if __name__ == '__main__':

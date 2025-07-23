@@ -2,9 +2,9 @@ import logging
 import math
 import random
 import time
+import tomllib
 from datetime import timedelta
 
-import tomllib
 import torch
 from tqdm import tqdm
 
@@ -103,7 +103,7 @@ def main():
     parser.add_argument('--val-data', metavar='FILE_PATH', required=True, help='validation data')
     parser.add_argument('--sw-vocab', metavar='FILE_PATH', required=True, help='subword vocab')
     parser.add_argument('--sw-model', metavar='FILE_PATH', required=True, help='subword model')
-    parser.add_argument('--model', metavar='FILE_PATH', required=True, help='translation model')
+    parser.add_argument('--model', metavar='FILE_PATH', required=True, help='pytorch model')
     parser.add_argument('--log', metavar='FILE_PATH', required=True, help='logger output')
     parser.add_argument('--seed', type=int, help='random seed')
     args, unknown = parser.parse_known_args()

@@ -39,7 +39,7 @@ def sampling_search(
     return path[0], seq_prob
 
 
-def top_k_sampling(probabilities: Tensor, k: int) -> tuple[int, float]:
+def top_k_sampling(probabilities: Tensor, k: int = 50) -> tuple[int, float]:
     """
     Args:
         probabilities (torch.Tensor): Probability distribution over vocabulary.
@@ -56,7 +56,7 @@ def top_k_sampling(probabilities: Tensor, k: int) -> tuple[int, float]:
     return int(top_k_indices[next_token].item()), float(sorted_probs[next_token].item())
 
 
-def top_p_sampling(probabilities: Tensor, p: int) -> tuple[int, float]:
+def top_p_sampling(probabilities: Tensor, p: float = 0.9) -> tuple[int, float]:
     """
     Args:
         probabilities (torch.Tensor): Probability distribution over vocabulary.
@@ -80,7 +80,7 @@ def top_p_sampling(probabilities: Tensor, p: int) -> tuple[int, float]:
     return int(real_i[next_token].item()), float(sorted_probs[next_token].item())
 
 
-def epsilon_sampling(probabilities: Tensor, epsilon: float) -> tuple[int, float]:
+def epsilon_sampling(probabilities: Tensor, epsilon: float = 1e-4) -> tuple[int, float]:
     """
     Args:
         probabilities (torch.Tensor): Probability distribution over vocabulary.
@@ -99,7 +99,7 @@ def epsilon_sampling(probabilities: Tensor, epsilon: float) -> tuple[int, float]
     return int(allowed_indices[next_token].item()), float(probabilities[next_token].item())
 
 
-def eta_sampling(probabilities: Tensor, epsilon: float) -> tuple[int, float]:
+def eta_sampling(probabilities: Tensor, epsilon: float = 1e-3) -> tuple[int, float]:
     """
     Args:
         probabilities (torch.Tensor): Probability distribution over vocabulary.

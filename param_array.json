@@ -1,0 +1,16 @@
+{
+    "mbr-sampling": [
+        "top-k",
+        "top-p",
+        "epsilon",
+        "eta"
+    ],
+    "mbr-metrics": [
+        "bleu",
+        "chrf",
+        "comet"
+    ],
+    "beam-size": [
+        20
+    ]
+}
