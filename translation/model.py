@@ -54,10 +54,17 @@ class Encoder(nn.Module):
 
 
 class DecoderLayer(nn.Module):
-    def __init__(self, embed_dim: int, ff_dim: int, num_heads: int, dropout: float):
+    def __init__(
+        self,
+        embed_dim: int,
+        ff_dim: int,
+        num_heads: int,
+        dropout: float,
+        kv_cache: bool = False,
+    ):
         super(DecoderLayer, self).__init__()
-        self.self_attn = MultiHeadAttention(embed_dim, num_heads, dropout)
-        self.crss_attn = MultiHeadAttention(embed_dim, num_heads, dropout)
+        self.self_attn = MultiHeadAttention(embed_dim, num_heads, dropout, kv_cache)
+        self.crss_attn = MultiHeadAttention(embed_dim, num_heads, dropout, kv_cache)
         self.ff = FeedForward(embed_dim, ff_dim, dropout)
         self.sublayers = clone(SublayerConnection(embed_dim, dropout), 3)
 
@@ -76,10 +83,18 @@ class DecoderLayer(nn.Module):
 
 class Decoder(nn.Module):
     def __init__(
-        self, embed_dim: int, ff_dim: int, num_heads: int, dropout: float, num_layers: int
+        self,
+        embed_dim: int,
+        ff_dim: int,
+        num_heads: int,
+        dropout: float,
+        num_layers: int,
+        kv_cache: bool = False,
     ):
         super(Decoder, self).__init__()
-        self.layers = clone(DecoderLayer(embed_dim, ff_dim, num_heads, dropout), num_layers)
+        self.layers = clone(
+            DecoderLayer(embed_dim, ff_dim, num_heads, dropout, kv_cache), num_layers
+        )
         self.norm = ScaleNorm(embed_dim**0.5)
 
     def forward(
@@ -104,13 +119,15 @@ class Model(nn.Module):
         num_heads: int,
         dropout: float,
         num_layers: int,
+        kv_cache: bool = False,
     ):
         super(Model, self).__init__()
         self.encoder = Encoder(embed_dim, ff_dim, num_heads, dropout, num_layers)
-        self.decoder = Decoder(embed_dim, ff_dim, num_heads, dropout, num_layers)
+        self.decoder = Decoder(embed_dim, ff_dim, num_heads, dropout, num_layers, kv_cache)
         self.out_embed = Embedding(embed_dim, math.ceil(vocab_dim / 8) * 8)
         self.src_embed = nn.Sequential(self.out_embed, PositionalEncoding(embed_dim, dropout))
         self.tgt_embed = nn.Sequential(self.out_embed, PositionalEncoding(embed_dim, dropout))
+        self.kv_cache = kv_cache
 
     def encode(self, src_nums: Tensor, src_mask: Tensor | None = None) -> Tensor:
         src_embs = self.src_embed(src_nums)
@@ -123,7 +140,10 @@ class Model(nn.Module):
         src_mask: Tensor | None = None,
         tgt_mask: Tensor | None = None,
     ) -> Tensor:
-        tgt_embs = self.tgt_embed(tgt_nums)
+        if self.kv_cache:
+            tgt_embs = self.tgt_embed(tgt_nums)[:, -1].unsqueeze(1)
+        else:
+            tgt_embs = self.tgt_embed(tgt_nums)
         return self.decoder(src_encs, tgt_embs, src_mask, tgt_mask)
 
     def forward(

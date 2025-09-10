@@ -33,7 +33,8 @@ def generate_main(job_name: str, args: Namespace, params: list[tuple] | None = N
     string += f'  --val-data {args.val_data} \\\n'
     string += f'  --sw-vocab {args.sw_vocab} \\\n'
     string += f'  --sw-model {args.sw_model} \\\n'
-    string += f'  --model {args.model}/{job_name}.pt \\\n'
+    # string += f'  --model {args.model}/{job_name}.pt \\\n'
+    string += f'  --model {args.model}/{args.model}.pt \\\n'
     string += f'  --log {args.model}/{job_name}.log \\\n'
     if args.seed:
         string += f'  --seed {args.seed} \\\n'
@@ -54,7 +55,8 @@ def generate_translate(job_name: str, test_data: str, args: Namespace) -> str:
     if args.mbr_sampling:
         string += f'  --mbr-metric {args.mbr_metric} \\\n'
         string += f'  --mbr-sampling {args.mbr_sampling} \\\n'
-    string += f'  --model {args.model}/{job_name}.pt \\\n'
+    # string += f'  --model {args.model}/{job_name}.pt \\\n'
+    string += f'  --model {args.model}/{args.model}.pt \\\n'
     string += f'  --input {test_data}.{src_lang} \\\n'
     string += f'  > {args.model}/{job_name}.{test_set}.hyp \n'
     return string
@@ -157,16 +159,15 @@ def qf_submit(job_name: str, args: Namespace) -> str:
 
 def set_defaults(args):
     if args.train_data is None:
-        args.train_data = f'{args.data_dir}/train.norm.bpe.{args.lang_pair}'
+        args.train_data = f'{args.data_dir}/train/train.norm.bpe.{args.lang_pair}'
         if not os.path.exists(args.train_data):
-            args.train_data = f'{args.data_dir}/train.norm.spm.{args.lang_pair}'
+            args.train_data = f'{args.data_dir}/train/train.norm.spm.{args.lang_pair}'
     if args.val_data is None:
-        args.val_data = f'{args.data_dir}/val.norm.bpe.{args.lang_pair}'
+        args.val_data = f'{args.data_dir}/val/val.norm.bpe.{args.lang_pair}'
         if not os.path.exists(args.val_data):
-            args.val_data = f'{args.data_dir}/val.norm.spm.{args.lang_pair}'
+            args.val_data = f'{args.data_dir}/val/val.norm.spm.{args.lang_pair}'
     if args.test_data is None:
-        src_lang, _ = args.lang_pair.split('-')
-        args.test_data = [f'{args.data_dir}/test.{src_lang}']
+        args.test_data = [f'{args.data_dir}/test/test']
     if args.sw_vocab is None:
         args.sw_vocab = f'{args.data_dir}/vocab.tsv'
         if not os.path.exists(args.sw_vocab):

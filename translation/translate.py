@@ -68,7 +68,7 @@ def translate(
     src_words = ['<BOS>'] + tokenizer.tokenize(string) + ['<EOS>']
 
     model.eval()
-    with torch.no_grad():
+    with torch.inference_mode():
         src_nums = torch.tensor(vocab.numberize(src_words), device=device)
         src_encs = model.encode(src_nums.unsqueeze(0))
         if mbr_sampling is None or mbr_sampling == 'beam-search':
@@ -95,7 +95,7 @@ def main():
     parser.add_argument('--mbr-metric', metavar='METRIC', help='evaluation metric')
     parser.add_argument('--mbr-sampling', metavar='METHOD', help='sampling method')
     parser.add_argument('--model', metavar='FILE_PATH', required=True, help='pytorch model')
-    parser.add_argument('--input', type=argparse.FileType('r'), help='detokenized input')
+    parser.add_argument('--input', metavar='FILE_PATH', help='detokenized input')
     args, unknown = parser.parse_known_args()
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'

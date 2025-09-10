@@ -65,7 +65,6 @@ class ScaleNorm(nn.Module):
 
 
 class LayerNorm(nn.Module):
-
     def __init__(self, embed_dim: int, eps: float = 1e-6):
         super(LayerNorm, self).__init__()
         self.gamma = nn.Parameter(torch.ones(embed_dim))
@@ -78,7 +77,7 @@ class LayerNorm(nn.Module):
 
 
 class MultiHeadAttention(nn.Module):
-    def __init__(self, embed_dim: int, num_heads: int, dropout: float):
+    def __init__(self, embed_dim: int, num_heads: int, dropout: float, kv_cache: bool = False):
         super(MultiHeadAttention, self).__init__()
         assert embed_dim % num_heads == 0
         self.linears = clone(nn.Linear(embed_dim, embed_dim), 4)
@@ -86,6 +85,8 @@ class MultiHeadAttention(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.head_dim = embed_dim // num_heads
         self.num_heads = num_heads
+        self.kv_cache: tuple[Tensor, Tensor] | None = None
+        self.autoregressive = kv_cache
 
     def attention(
         self, query: Tensor, key: Tensor, value: Tensor, mask: Tensor | None = None
@@ -96,17 +97,49 @@ class MultiHeadAttention(nn.Module):
         return self.dropout(scores.softmax(dim=-1)) @ value
 
     def _reshape_from(self, x: Tensor) -> Tensor:
-        return x.reshape(*x.size()[:2], self.num_heads, self.head_dim)
+        # return x.reshape(*x.size()[:2], self.num_heads, self.head_dim)
+        return x.view(x.size(0), x.size(1), self.num_heads, self.head_dim).transpose(1, 2)
 
     def _reshape_to(self, x: Tensor) -> Tensor:
-        return x.reshape(*x.size()[:2], -1)
+        # return x.reshape(*x.size()[:2], -1)
+        return x.transpose(1, 2).contiguous().view(x.size(0), x.size(2), -1)
+
+    def init_cache(self, batch_size: int, max_len: int, device):
+        k_cache = torch.empty(batch_size, self.num_heads, max_len, self.head_dim, device=device)
+        v_cache = torch.empty(batch_size, self.num_heads, max_len, self.head_dim, device=device)
+        self.cur_len = 0
+        self.kv_cache = (k_cache, v_cache)
+
+    def append_cache(self, new_k, new_v):
+        k_cache, v_cache = self.kv_cache
+        k_cache[:, :, self.cur_len] = new_k.squeeze(2)
+        v_cache[:, :, self.cur_len] = new_v.squeeze(2)
+        self.cur_len += 1
+        self.kv_cache = (k_cache, v_cache)
+        return k_cache[:, :, : self.cur_len], v_cache[:, :, : self.cur_len]
 
     def forward(
         self, query: Tensor, key: Tensor, value: Tensor, mask: Tensor | None = None
     ) -> Tensor:
-        query, key, value = [
-            self._reshape_from(linear(x)).transpose(1, 2)
-            for linear, x in zip(self.linears, (query, key, value))
-        ]
+        if self.autoregressive:
+            if key.size(1) == 1:
+                if self.kv_cache is None:
+                    max_len = 512 if key.size(1) == 1 else key.size(1)
+                    self.init_cache(query.size(0), max_len, query.device)
+                new_k = self._reshape_from(self.linears[1](key))
+                new_v = self._reshape_from(self.linears[2](value))
+                key, value = self.append_cache(new_k, new_v)
+            else:
+                if self.kv_cache is None:
+                    new_k = self._reshape_from(self.linears[1](key))
+                    new_v = self._reshape_from(self.linears[2](value))
+                    self.kv_cache = (new_k, new_v)
+                key, value = self.kv_cache
+            query = self._reshape_from(self.linears[0](query))
+        else:
+            query, key, value = [
+                self._reshape_from(linear(x))
+                for linear, x in zip(self.linears, (query, key, value))
+            ]
         outputs = self.attention(query, key, value, mask)
-        return self.linears[-1](self._reshape_to(outputs.transpose(1, 2)))
+        return self.linears[-1](self._reshape_to(outputs))
